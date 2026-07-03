@@ -1,0 +1,40 @@
+name: Générer et publier un Short automatiquement
+
+on:
+  schedule:
+    - cron: '0 8 * * *'
+  workflow_dispatch:
+
+jobs:
+  generate-short:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Installer Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Installer les dépendances
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Installer ffmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
+      - name: Décoder le token YouTube
+        run: |
+          echo "${{ secrets.YOUTUBE_TOKEN }}" | base64 -d > token.pickle
+
+      - name: Copier client_secret
+        run: |
+          echo "${{ secrets.CLIENT_SECRET }}" | base64 -d > client_secret.json
+
+      - name: Générer et publier le Short
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: python src/main.py

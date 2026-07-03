@@ -1,0 +1,112 @@
+import os
+import pickle
+from google.auth.transport.requests import Request
+from google_auth_oauthlib.flow import InstalledAppFlow
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaFileUpload
+
+SCOPES = ["https://www.googleapis.com/auth/youtube.upload"]
+TOKEN_FILE = "token.pickle"
+CLIENT_SECRETS_FILE = "client_secret.json"
+
+AFFILIATE_LINKS = {
+    "science": "https://amzn.to/4bookSciences",
+    "histoire": "https://amzn.to/4bookHistoire",
+    "space": "https://amzn.to/4bookEspace",
+    "animaux": "https://amzn.to/4bookAnimaux",
+    "general": "https://amzn.to/4cultureGen",
+}
+
+DESCRIPTION_TEMPLATE = """{description}
+
+📚 SOURCES & RECOMMANDATIONS :
+📖 {affiliate_text}
+📖 Découvre notre sélection : {affiliate_url}
+
+🎬 Abonne-toi pour plus de contenus ! 🔔
+
+#shorts #faits #culturegenerale #lecon #apprendre #connaissances
+{tags}
+"""
+
+def get_authenticated_service():
+    credentials = None
+
+    if os.path.exists(TOKEN_FILE):
+        with open(TOKEN_FILE, "rb") as f:
+            credentials = pickle.load(f)
+
+    if not credentials or not credentials.valid:
+        if credentials and credentials.expired and credentials.refresh_token:
+            credentials.refresh(Request())
+        else:
+            if not os.path.exists(CLIENT_SECRETS_FILE):
+                raise FileNotFoundError(
+                    "client_secret.json introuvable. Exécute d'abord: python setup.py"
+                )
+            flow = InstalledAppFlow.from_client_secrets_file(
+                CLIENT_SECRETS_FILE, SCOPES
+            )
+            credentials = flow.run_local_server(port=0)
+
+        with open(TOKEN_FILE, "wb") as f:
+            pickle.dump(credentials, f)
+
+    return build("youtube", "v3", credentials=credentials)
+
+def upload_video(video_path, script, category="general"):
+    youtube = get_authenticated_service()
+
+    affiliate_key = category.split()[0] if category else "general"
+    affiliate_key = affiliate_key.lower()
+    if affiliate_key not in AFFILIATE_LINKS:
+        affiliate_key = "general"
+
+    affiliate_url = AFFILIATE_LINKS[affiliate_key]
+    affiliate_text = {
+        "science": "Les meilleurs livres scientifiques",
+        "histoire": "Les livres d'histoire recommandés",
+        "space": "Livres sur l'espace et l'astronomie",
+        "animaux": "Découvre la faune extraordinaire",
+        "general": "Notre sélection culture générale",
+    }.get(affiliate_key, "Découvre notre sélection")
+
+    tags_str = " ".join(f"#{t}" for t in script["tags"]) if script.get("tags") else ""
+
+    body = {
+        "snippet": {
+            "title": script["titre"][:100],
+            "description": DESCRIPTION_TEMPLATE.format(
+                description=script.get("description", "Une vidéo courte pleine de faits surprenants !"),
+                affiliate_text=affiliate_text,
+                affiliate_url=affiliate_url,
+                tags=tags_str,
+            ).strip(),
+            "tags": script.get("tags", []),
+            "categoryId": "22",
+        },
+        "status": {
+            "privacyStatus": "public",
+            "selfDeclaredMadeForKids": False,
+        },
+    }
+
+    media = MediaFileUpload(video_path, chunksize=-1, resumable=True)
+
+    request = youtube.videos().insert(
+        part="snippet,status",
+        body=body,
+        media_body=media,
+    )
+
+    response = None
+    while response is None:
+        status, response = request.next_chunk()
+        if status:
+            print(f"Upload: {int(status.progress() * 100)}%")
+
+    print(f"Vidéo uploadée: https://youtube.com/shorts/{response['id']}")
+    return response["id"]
+
+if __name__ == "__main__":
+    print("Test upload...")
