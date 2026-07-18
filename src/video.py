@@ -174,8 +174,8 @@ def create_video(script, audio_path, output_path="output.mp4"):
             )
             txt_arr = np.array(txt_img)
             txt_clip = ImageClip(txt_arr, duration=text_duration)
-            txt_clip = txt_clip.set_position(("center", 1250))
-            txt_clip = txt_clip.set_start(current_time)
+            txt_clip = txt_clip.with_position(("center", 1250))
+            txt_clip = txt_clip.with_start(current_time)
 
             if is_last:
                 txt_clip = txt_clip.with_effects([CrossFadeIn(0.3)])
@@ -184,8 +184,8 @@ def create_video(script, audio_path, output_path="output.mp4"):
             current_time += text_duration
 
         video = CompositeVideoClip(clips, size=(1080, 1920))
-        video = video.set_audio(audio)
-        video = video.set_duration(duration)
+        video = video.with_audio(audio)
+        video = video.with_duration(duration)
 
         video.write_videofile(
             output_path,
