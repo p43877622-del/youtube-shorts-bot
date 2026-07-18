@@ -60,7 +60,6 @@ def generate_script(api_key=None):
     response = client.chat.completions.create(
         model="google/gemma-2-9b-it:free",
         messages=[{"role": "user", "content": prompt}],
-        response_format={"type": "json_object"},
         max_tokens=1024,
         temperature=0.7,
     )
