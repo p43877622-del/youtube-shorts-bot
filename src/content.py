@@ -45,16 +45,20 @@ Règles:
 
 def generate_script(api_key=None):
     if not api_key:
-        api_key = os.environ.get("GROQ_API_KEY")
+        api_key = os.environ.get("OPENROUTER_API_KEY")
         if not api_key:
-            raise ValueError("GROQ_API_KEY non trouvée")
+            raise ValueError("OPENROUTER_API_KEY non trouvée")
 
-    client = OpenAI(api_key=api_key, base_url="https://api.groq.com/openai/v1")
+    client = OpenAI(
+        api_key=api_key,
+        base_url="https://openrouter.ai/api/v1",
+        default_headers={"HTTP-Referer": "https://github.com/p43877622-del/youtube-shorts-bot"},
+    )
     category = random.choice(CATEGORIES)
     prompt = FACT_TEMPLATE.format(category=category)
 
     response = client.chat.completions.create(
-        model="llama3-70b-8192",
+        model="google/gemma-2-9b-it:free",
         messages=[{"role": "user", "content": prompt}],
         response_format={"type": "json_object"},
         max_tokens=1024,
