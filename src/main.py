@@ -14,9 +14,9 @@ from src.upload import upload_video
 def main():
     print("=== GÉNÉRATION DU SHORT ===")
 
-    api_key = os.environ.get("GEMINI_API_KEY")
+    api_key = os.environ.get("DEEPSEEK_API_KEY")
     if not api_key:
-        sys.exit("ERREUR: GEMINI_API_KEY non définie")
+        sys.exit("ERREUR: DEEPSEEK_API_KEY non définie")
 
     try:
         script = generate_script(api_key=api_key)
