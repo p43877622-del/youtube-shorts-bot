@@ -1,7 +1,7 @@
 import os
 import json
 import random
-from openai import OpenAI
+from google import genai
 
 CATEGORIES = [
     "science et nature",
@@ -45,23 +45,20 @@ Règles:
 
 def generate_script(api_key=None):
     if not api_key:
-        api_key = os.environ.get("DEEPSEEK_API_KEY")
+        api_key = os.environ.get("GEMINI_API_KEY")
         if not api_key:
-            raise ValueError("DEEPSEEK_API_KEY non trouvée")
+            raise ValueError("GEMINI_API_KEY non trouvée")
 
-    client = OpenAI(api_key=api_key, base_url="https://api.deepseek.com/v1")
+    client = genai.Client(api_key=api_key)
     category = random.choice(CATEGORIES)
     prompt = FACT_TEMPLATE.format(category=category)
 
-    response = client.chat.completions.create(
-        model="deepseek-chat",
-        messages=[{"role": "user", "content": prompt}],
-        response_format={"type": "json_object"},
-        max_tokens=1024,
-        temperature=0.7,
+    response = client.models.generate_content(
+        model="gemini-2.0-flash",
+        contents=prompt,
     )
 
-    text = response.choices[0].message.content.strip()
+    text = response.text.strip()
     text = text.replace("```json", "").replace("```", "").strip()
 
     try:
