@@ -5,6 +5,7 @@ import requests
 from PIL import Image, ImageDraw, ImageFont
 import numpy as np
 from moviepy import ImageClip, AudioFileClip, CompositeVideoClip
+from moviepy.video.fx import Resize, CrossFadeIn
 
 BG_IMAGES = [
     "https://images.pexels.com/photos/207247/pexels-photo-207247.jpeg?auto=compress&cs=tinysrgb&w=1080",
@@ -144,7 +145,7 @@ def create_video(script, audio_path, output_path="output.mp4"):
             make_fallback_bg(bg_path)
 
         bg_clip = ImageClip(bg_path, duration=duration)
-        bg_clip = bg_clip.resize((1080, 1920))
+        bg_clip = bg_clip.with_effects([Resize((1080, 1920))])
 
         clips = [bg_clip]
 
@@ -177,7 +178,7 @@ def create_video(script, audio_path, output_path="output.mp4"):
             txt_clip = txt_clip.set_start(current_time)
 
             if is_last:
-                txt_clip = txt_clip.crossfadein(0.3)
+                txt_clip = txt_clip.with_effects([CrossFadeIn(0.3)])
 
             clips.append(txt_clip)
             current_time += text_duration
