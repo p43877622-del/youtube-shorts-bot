@@ -1,7 +1,7 @@
 import os
 import json
 import random
-from google import genai
+from openai import OpenAI
 
 CATEGORIES = [
     "science et nature",
@@ -45,20 +45,23 @@ Règles:
 
 def generate_script(api_key=None):
     if not api_key:
-        api_key = os.environ.get("GEMINI_API_KEY")
+        api_key = os.environ.get("GROQ_API_KEY")
         if not api_key:
-            raise ValueError("GEMINI_API_KEY non trouvée")
+            raise ValueError("GROQ_API_KEY non trouvée")
 
-    client = genai.Client(api_key=api_key)
+    client = OpenAI(api_key=api_key, base_url="https://api.groq.com/openai/v1")
     category = random.choice(CATEGORIES)
     prompt = FACT_TEMPLATE.format(category=category)
 
-    response = client.models.generate_content(
-        model="gemini-2.0-flash",
-        contents=prompt,
+    response = client.chat.completions.create(
+        model="llama3-70b-8192",
+        messages=[{"role": "user", "content": prompt}],
+        response_format={"type": "json_object"},
+        max_tokens=1024,
+        temperature=0.7,
     )
 
-    text = response.text.strip()
+    text = response.choices[0].message.content.strip()
     text = text.replace("```json", "").replace("```", "").strip()
 
     try:
