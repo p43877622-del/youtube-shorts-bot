@@ -1,7 +1,7 @@
 import os
 import json
 import random
-import google.generativeai as genai
+from google import genai
 
 CATEGORIES = [
     "science et nature",
@@ -44,20 +44,19 @@ Règles:
 """
 
 def generate_script(api_key=None):
-    if api_key:
-        genai.configure(api_key=api_key)
-    else:
+    if not api_key:
         api_key = os.environ.get("GEMINI_API_KEY")
         if not api_key:
             raise ValueError("GEMINI_API_KEY non trouvée")
-        genai.configure(api_key=api_key)
 
+    client = genai.Client(api_key=api_key)
     category = random.choice(CATEGORIES)
-    model = genai.GenerativeModel("gemini-2.0-flash")
-
     prompt = FACT_TEMPLATE.format(category=category)
 
-    response = model.generate_content(prompt)
+    response = client.models.generate_content(
+        model="gemini-2.0-flash",
+        contents=prompt,
+    )
 
     text = response.text.strip()
     text = text.replace("```json", "").replace("```", "").strip()
