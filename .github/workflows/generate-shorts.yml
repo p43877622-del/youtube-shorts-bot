@@ -28,11 +28,11 @@ jobs:
 
       - name: Décoder le token YouTube
         run: |
-          echo "${{ secrets.YOUTUBE_TOKEN }}" | base64 -d > token.pickle
+          python -c "import base64; f=open('token.pickle','wb'); f.write(base64.b64decode('${{ secrets.YOUTUBE_TOKEN }}')); f.close()"
 
       - name: Copier client_secret
         run: |
-          echo "${{ secrets.CLIENT_SECRET }}" | base64 -d > client_secret.json
+          python -c "import base64; f=open('client_secret.json','wb'); f.write(base64.b64decode('${{ secrets.CLIENT_SECRET }}')); f.close()"
 
       - name: Générer et publier le Short
         env:
