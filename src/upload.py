@@ -33,8 +33,11 @@ def get_authenticated_service():
     credentials = None
 
     if os.path.exists(TOKEN_FILE):
-        with open(TOKEN_FILE, "rb") as f:
-            credentials = pickle.load(f)
+        try:
+            with open(TOKEN_FILE, "rb") as f:
+                credentials = pickle.load(f)
+        except (EOFError, pickle.UnpicklingError):
+            credentials = None
 
     if not credentials or not credentials.valid:
         if credentials and credentials.expired and credentials.refresh_token:
