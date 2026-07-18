@@ -1,6 +1,7 @@
 import os
 import sys
 import json
+import time
 import tempfile
 import traceback
 
@@ -10,6 +11,7 @@ from src.content import generate_script
 from src.audio import generate_audio
 from src.video import create_video
 from src.upload import upload_video
+from src.thumbnail import generate_thumbnail
 
 def main():
     print("=== GÉNÉRATION DU SHORT ===")
@@ -18,13 +20,20 @@ def main():
     if not api_key:
         sys.exit("ERREUR: OPENROUTER_API_KEY non définie")
 
-    try:
-        script = generate_script(api_key=api_key)
-        print(f"Thème: {script['category']}")
-        print(f"Titre: {script['titre']}")
-        print(f"Faits: {len(script['faits'])}")
-    except Exception as e:
-        sys.exit(f"Erreur génération contenu: {e}")
+    script = None
+    for attempt in range(3):
+        try:
+            script = generate_script(api_key=api_key)
+            break
+        except Exception as e:
+            if attempt < 2:
+                print(f"Tentative {attempt+1}/3 échouée: {e}. Nouvel essai dans 5s...")
+                time.sleep(5)
+            else:
+                sys.exit(f"Erreur génération contenu après 3 tentatives: {e}")
+    print(f"Thème: {script['category']}")
+    print(f"Titre: {script['titre']}")
+    print(f"Faits: {len(script['faits'])}")
 
     try:
         audio_path = generate_audio(script["full_text"], "temp_audio.mp3")
