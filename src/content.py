@@ -58,7 +58,7 @@ def generate_script(api_key=None):
     prompt = FACT_TEMPLATE.format(category=category)
 
     response = client.chat.completions.create(
-        model="google/gemma-2-9b-it:free",
+        model="openrouter/free",
         messages=[{"role": "user", "content": prompt}],
         max_tokens=1024,
         temperature=0.7,
