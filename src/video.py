@@ -302,6 +302,19 @@ def create_video(script, audio_path, output_path="output.mp4"):
             cta_clip = cta_clip.with_effects([SlideIn(0.5, "bottom")])
             clips.append(cta_clip)
 
+            link_img = Image.new("RGBA", (400, 50), (0, 0, 0, 0))
+            link_draw = ImageDraw.Draw(link_img)
+            link_font = get_font(22, 500)
+            link_text = "📖 Lien en description"
+            link_bbox = link_draw.textbbox((0, 0), link_text, font=link_font)
+            link_draw.rounded_rectangle([5, 5, link_bbox[2] - link_bbox[0] + 35, link_bbox[3] - link_bbox[1] + 20], radius=12, fill=(0, 0, 0, 160))
+            link_draw.text((20, 13), link_text, font=link_font, fill=(255, 255, 255, 220))
+            link_arr = np.array(link_img)
+            link_clip = ImageClip(link_arr, duration=cta_duration)
+            link_clip = link_clip.with_position(("center", 1700))
+            link_clip = link_clip.with_start(cta_start)
+            clips.append(link_clip)
+
         music_path = os.path.join(tmpdir, "music.mp3")
         music_ok = False
         music_url = random.choice(MUSIC_URLS)

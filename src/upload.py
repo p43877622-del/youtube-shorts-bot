@@ -148,6 +148,10 @@ def upload_video(video_path, script, category="general"):
             print(f"Upload: {int(status.progress() * 100)}%")
 
     print(f"Vidéo uploadée: https://youtube.com/shorts/{response['id']}")
+    try:
+        add_to_playlist(response["id"], category)
+    except Exception as e:
+        print(f"⚠️ Ajout playlist: {e}")
     return response["id"]
 
 def upload_thumbnail(video_id, thumbnail_path):
@@ -156,6 +160,24 @@ def upload_thumbnail(video_id, thumbnail_path):
     request = youtube.thumbnails().set(videoId=video_id, media_body=media)
     response = request.execute()
     print(f"Miniature uploadée: {response}")
+    return response
+
+def add_to_playlist(video_id, category):
+    playlist_id = os.environ.get(f"PLAYLIST_{category.split()[0].upper()}")
+    if not playlist_id:
+        return
+    youtube = get_authenticated_service()
+    request = youtube.playlistItems().insert(
+        part="snippet",
+        body={
+            "snippet": {
+                "playlistId": playlist_id,
+                "resourceId": {"kind": "youtube#video", "videoId": video_id},
+            }
+        },
+    )
+    response = request.execute()
+    print(f"Ajouté à la playlist: {response['snippet']['playlistId']}")
     return response
 
 if __name__ == "__main__":

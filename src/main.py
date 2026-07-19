@@ -4,6 +4,7 @@ import json
 import time
 import logging
 import tempfile
+import requests
 import traceback
 from datetime import datetime
 
@@ -99,6 +100,16 @@ def main():
     video_path = make_video(script, audio_path)
     video_id = upload(video_path, script, script["category"])
     upload_thumb(video_id, script)
+
+    bot_token = os.environ.get("TELEGRAM_BOT_TOKEN")
+    chat_id = os.environ.get("TELEGRAM_CHAT_ID")
+    if bot_token and chat_id and video_id:
+        try:
+            msg = f"✅ Nouveau Short publié !\n📹 {script['titre']}\n🔗 https://youtube.com/shorts/{video_id}"
+            requests.post(f"https://api.telegram.org/bot{bot_token}/sendMessage", json={"chat_id": chat_id, "text": msg, "parse_mode": "Markdown"}, timeout=10)
+            log.info("Notification Telegram envoyée")
+        except Exception as e:
+            log.warning(f"Notification Telegram échouée: {e}")
 
     for f in ["temp_audio.mp3", "temp_video.mp4", "temp_thumb.jpg"]:
         if os.path.exists(f):

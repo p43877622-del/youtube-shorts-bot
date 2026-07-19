@@ -1,12 +1,24 @@
 import os
 import asyncio
+import random
 import edge_tts
 
-VOICE = "fr-FR-DeniseNeural"
-RATE = "+10%"
+VOICES = [
+    "fr-FR-DeniseNeural",
+    "fr-FR-HenriNeural",
+    "fr-CA-SylvieNeural",
+    "fr-CH-ArianeNeural",
+    "fr-BE-CharlineNeural",
+]
+RATES = {
+    "accroche": "+5%",
+    "normal": "+10%",
+    "outro": "+8%",
+}
 
 async def generate_audio_async(text, output_path="output.mp3"):
-    communicate = edge_tts.Communicate(text, VOICE, rate=RATE)
+    voice = random.choice(VOICES)
+    communicate = edge_tts.Communicate(text, voice, rate=RATES["normal"])
     await communicate.save(output_path)
     return output_path
 
