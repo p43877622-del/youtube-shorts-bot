@@ -122,10 +122,9 @@ def create_title_image(title, size=(1080, 1920)):
 
 def create_chime(freq=880, duration=0.15, volume=0.12):
     def make_frame(t):
-        if t >= duration:
-            return 0.0
-        env = max(0, 1 - t / duration)
-        return float(np.sin(2 * np.pi * freq * t) * env * 0.5)
+        t = np.asarray(t)
+        env = np.clip(1.0 - t / duration, 0.0, 1.0)
+        return (np.sin(2 * np.pi * freq * t) * env * 0.5).astype(np.float32)
     chime = AudioClip(make_frame, duration=duration)
     chime = chime.with_fps(44100)
     return chime.with_volume_scaled(volume)
