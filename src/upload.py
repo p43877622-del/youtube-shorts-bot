@@ -40,13 +40,20 @@ AFFILIATE_LINKS = {
 
 DESCRIPTION_TEMPLATE = """{description}
 
-📚 SOURCES & RECOMMANDATIONS :
-📖 {affiliate_text}
-📖 Découvre notre sélection : {affiliate_url}
+⏱ TIMELINE :
+{timeline}
 
-🎬 Abonne-toi pour plus de contenus ! 🔔
+📚 RECOMMANDATIONS :
+📖 {affiliate_text} → {affiliate_url}
+📖 Découvre notre sélection de livres : {affiliate_url}
 
-#shorts #faits #culturegenerale #lecon #apprendre #connaissances
+💬 Quelle est ton {question} ? Dis-le en commentaire ! 👇
+
+🎬 Abonne-toi pour ne rien rater ! 🔔
+
+{hashtags}
+
+#shorts #culturegenerale #apprendre #curiosite
 {tags}
 """
 
@@ -96,6 +103,14 @@ def upload_video(video_path, script, category="general"):
     }.get(affiliate_key, "Découvre notre sélection")
 
     tags_str = " ".join(f"#{t}" for t in script["tags"]) if script.get("tags") else ""
+    hashtags = script.get("hashtags", "#culturegenerale #shorts")
+    timeline_lines = []
+    for i, fait in enumerate(script.get("faits", [])):
+        timeline_lines.append(f"• {fait}")
+    timeline = "\n".join(timeline_lines)
+
+    question_words = {"science": "fait préféré", "histoire": "époque préférée", "general": "découverte", "space": "planète préférée", "animaux": "animal préféré"}
+    question = question_words.get(affiliate_key, "découverte")
 
     body = {
         "snippet": {
@@ -104,6 +119,9 @@ def upload_video(video_path, script, category="general"):
                 description=script.get("description", "Une vidéo courte pleine de faits surprenants !"),
                 affiliate_text=affiliate_text,
                 affiliate_url=affiliate_url,
+                timeline=timeline,
+                question=question,
+                hashtags=hashtags,
                 tags=tags_str,
             ).strip(),
             "tags": script.get("tags", []),

@@ -16,7 +16,10 @@ CATEGORIES = [
     "inventions qui ont changé le monde",
 ]
 
-FACT_TEMPLATE = """Tu es un créateur de contenu YouTube Shorts en français.
+TEMPLATES = [
+    {
+        "name": "faits insolites",
+        "prompt": """Tu es un créateur de contenu YouTube Shorts en français.
 Génère un script pour une vidéo courte (20-25 secondes) sur le thème: {category}.
 
 Format de réponse STRICT (réponds UNIQUEMENT ce JSON, rien d'autre):
@@ -41,8 +44,109 @@ Règles:
 - Langage simple et direct, accessible à tous
 - Ton dynamique et captivant
 - PUBLIC VISÉ: francophone général (Afrique, Europe)
-- EFFET BOUCLE: L'outro et l'accroche doivent se connecter naturellement (la fin ramène au début pour un visionnage en boucle)
-"""
+- EFFET BOUCLE: L'outro et l'accroche doivent se connecter naturellement (la fin ramène au début)
+""",
+    },
+    {
+        "name": "question-réponse",
+        "prompt": """Tu es un créateur de contenu YouTube Shorts en français spécialisé dans les quiz.
+Génère un script pour une vidéo courte (20-25 secondes) sur le thème: {category}, sous format question-réponse.
+
+Format de réponse STRICT (réponds UNIQUEMENT ce JSON):
+
+{{
+  "titre": "Titre accrocheur avec question (max 60 car.)",
+  "accroche": "Une question qui intrigue pour les 3 premières secondes",
+  "faits": [
+    "Question 1 ? Réponse : explication courte",
+    "Question 2 ? Réponse : explication courte",
+    "Question 3 ? Réponse : explication courte",
+    "Question 4 ? Réponse : explication courte",
+    "Question 5 ? Réponse : explication courte"
+  ],
+  "outro": "Phrase qui donne envie d'en savoir plus",
+  "tags": ["tag1", "tag2", "tag3", "tag4", "tag5"]
+}}
+
+Règles:
+- Format question + réponse pour chaque fait
+- Questions surprenantes qui donnent envie de répondre
+- Réponses courtes et claires (< 15 mots)
+- PUBLIC VISÉ: francophone général (Afrique, Europe)
+- EFFET BOUCLE: La dernière question ramène à la première
+""",
+    },
+    {
+        "name": "liste rapide",
+        "prompt": """Tu es un créateur de contenu YouTube Shorts en français.
+Génère un script pour une vidéo courte (15-20 secondes) sur le thème: {category}.
+Style: liste rapide et dynamique, comme un top 5.
+
+Format de réponse STRICT (réponds UNIQUEMENT ce JSON):
+
+{{
+  "titre": "TOP 5 [catégorie] (max 50 car.)",
+  "accroche": "Accroche ultra-rapide qui annonce le top",
+  "faits": [
+    "Numéro 5 : ...",
+    "Numéro 4 : ...",
+    "Numéro 3 : ...",
+    "Numéro 2 : ...",
+    "Numéro 1 : ..."
+  ],
+  "outro": "Phrase de conclusion percutante",
+  "tags": ["tag1", "tag2", "tag3", "tag4", "tag5"]
+}}
+
+Règles:
+- Chaque fait doit commencer par son numéro
+- Très rythmé, phrases très courtes (< 10 mots)
+- Le numéro 1 doit être le plus impressionnant
+- PUBLIC VISÉ: francophone général (Afrique, Europe)
+- EFFET BOUCLE: La fin ramène au début
+""",
+    },
+]
+
+CATEGORY_HASHTAGS = {
+    "science": "#science #decouverte #savoirs #apprendre #curieux",
+    "histoire": "#histoire #passe #culture #patrimoine #lecon",
+    "technologie": "#tech #innovation #futur #numerique #hightech",
+    "santé": "#sante #bienetre #corps #medecine #vitalite",
+    "animaux": "#animaux #nature #faune #especes #sauvage",
+    "espace": "#espace #astronomie #univers #planetes #etoiles",
+    "mystere": "#mystere #inexplique #phenomene #enigme #secrets",
+    "records": "#records #exploits #guiness #mondial #challenge",
+    "alimentation": "#nutrition #alimentation #sante #cuisine #bienmanger",
+    "general": "#culturegenerale #savoir #apprendre #shorts #curiosite",
+}
+
+USED_FILE = ".used_categories.json"
+
+def _get_available_categories():
+    used = []
+    if os.path.exists(USED_FILE):
+        try:
+            with open(USED_FILE, "r") as f:
+                used = json.load(f)
+        except:
+            pass
+    available = [c for c in CATEGORIES if c not in used]
+    if not available:
+        available = CATEGORIES
+        used = []
+    return available, used
+
+def _mark_used(category, used):
+    used.append(category)
+    with open(USED_FILE, "w") as f:
+        json.dump(used, f)
+
+def get_hashtags(category):
+    for key, tags in CATEGORY_HASHTAGS.items():
+        if key in category:
+            return tags
+    return CATEGORY_HASHTAGS["general"]
 
 PROVIDERS = [
     {
@@ -121,20 +225,15 @@ def _is_valid_script(script):
     return True
 
 def generate_script(api_key=None):
-    category = random.choice(CATEGORIES)
-    prompt = FACT_TEMPLATE.format(category=category)
+    available, used = _get_available_categories()
+    category = random.choice(available)
+    _mark_used(category, used)
+
+    template = random.choice(TEMPLATES)
+    prompt = template["prompt"].format(category=category)
 
     providers_to_try = list(PROVIDERS)
     random.shuffle(providers_to_try)
-
-    if api_key:
-        providers_to_try.insert(0, {
-            "name": "Custom",
-            "base_url": "https://openrouter.ai/api/v1",
-            "api_key_var": None,
-            "model": "openrouter/free",
-            "headers": {"HTTP-Referer": "https://github.com/p43877622-del/youtube-shorts-bot"},
-        })
 
     last_error = None
     for provider in providers_to_try:
@@ -148,14 +247,21 @@ def generate_script(api_key=None):
             script = _parse_script(text)
             if _is_valid_script(script):
                 full_text = script["accroche"] + ". " + " ".join(script["faits"]) + ". " + script["outro"]
+                tags = script.get("tags", [])
+                if isinstance(tags, str):
+                    tags = [tags]
+                tags_str = " ".join(f"#{t}" for t in tags) if tags else ""
                 return {
                     "titre": script.get("titre", "Incroyable !"),
                     "accroche": script.get("accroche", ""),
                     "faits": script.get("faits", []),
                     "outro": script.get("outro", ""),
                     "full_text": full_text,
-                    "tags": script.get("tags", ["shorts", "faits"]),
+                    "tags": tags,
+                    "tags_str": tags_str,
+                    "hashtags": get_hashtags(category),
                     "category": category,
+                    "template": template["name"],
                 }
         except Exception as e:
             last_error = e
