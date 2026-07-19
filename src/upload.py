@@ -33,6 +33,7 @@ AFFILIATE_LINKS = {
     ],
     "general": [
         "https://amzn.to/4bu2u4g",
+        "https://amzn.to/44CEjgm",
     ],
 }
 
