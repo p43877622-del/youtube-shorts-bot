@@ -109,17 +109,19 @@ Règles:
 ]
 
 CATEGORY_HASHTAGS = {
-    "science": "#science #decouverte #savoirs #apprendre #curieux",
-    "histoire": "#histoire #passe #culture #patrimoine #lecon",
-    "technologie": "#tech #innovation #futur #numerique #hightech",
-    "santé": "#sante #bienetre #corps #medecine #vitalite",
-    "animaux": "#animaux #nature #faune #especes #sauvage",
-    "espace": "#espace #astronomie #univers #planetes #etoiles",
-    "mystere": "#mystere #inexplique #phenomene #enigme #secrets",
-    "records": "#records #exploits #guiness #mondial #challenge",
-    "alimentation": "#nutrition #alimentation #sante #cuisine #bienmanger",
-    "general": "#culturegenerale #savoir #apprendre #shorts #curiosite",
+    "science": "#science #decouverte #savoirs #apprendre #curiosite #biologie #physique #chimie",
+    "histoire": "#histoire #passe #culture #patrimoine #civilisation #archeologie #lecon #histoireDeFrance",
+    "technologie": "#tech #innovation #futur #numerique #hightech #IA #intelligenceArtificielle #gadget",
+    "santé": "#sante #bienetre #corps #medecine #vitalite #fitness #nutrition #santeNaturelle",
+    "animaux": "#animaux #nature #faune #especes #sauvage #animauxDrole #curiositeAnimal #biodiversite",
+    "espace": "#espace #astronomie #univers #planetes #etoiles #NASA #astrophysique #cosmos",
+    "mystere": "#mystere #inexplique #phenomene #enigme #secrets #paranormal #mysteresDuMonde #etrange",
+    "records": "#records #exploits #guiness #mondial #challenge #incroyable #performances #recordDuMonde",
+    "alimentation": "#nutrition #alimentation #sante #cuisine #bienmanger #recette #gastronomie #food",
+    "general": "#culturegenerale #savoir #apprendre #curiosite #intelligence #connaissance #shorts #education",
 }
+
+VIRAL_HASHTAGS = "#pourtoi #fyp #viral #tendance #shorts #shortsYouTube #decouvrir"
 
 USED_FILE = ".used_categories.json"
 
@@ -260,6 +262,7 @@ def generate_script(api_key=None):
                     "tags": tags,
                     "tags_str": tags_str,
                     "hashtags": get_hashtags(category),
+                    "viral_hashtags": VIRAL_HASHTAGS,
                     "category": category,
                     "template": template["name"],
                 }

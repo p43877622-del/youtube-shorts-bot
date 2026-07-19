@@ -40,13 +40,11 @@ AFFILIATE_LINKS = {
 
 DESCRIPTION_TEMPLATE = """{description}
 
-SOURCES & RECOMMANDATIONS :
-{affiliate_text}
-Decouvre notre selection : {affiliate_url}
+{affiliate_text} : {affiliate_url}
 
 Abonne-toi pour plus de contenus !
 
-{hashtags}
+{hashtags} {viral_hashtags}
 {tags}
 """
 
@@ -99,6 +97,7 @@ def upload_video(video_path, script, category="general"):
 
     tags_str = " ".join(f"#{t}" for t in script["tags"]) if script.get("tags") else ""
     hashtags = script.get("hashtags", "#culturegenerale #shorts")
+    viral_hashtags = script.get("viral_hashtags", "#pourtoi #viral #shorts")
 
     try:
         desc = DESCRIPTION_TEMPLATE.format(
@@ -106,6 +105,7 @@ def upload_video(video_path, script, category="general"):
             affiliate_text=affiliate_text,
             affiliate_url=affiliate_url,
             hashtags=hashtags,
+            viral_hashtags=viral_hashtags,
             tags=tags_str,
         ).strip()
         desc_bytes = desc.encode("utf-8")
@@ -114,11 +114,14 @@ def upload_video(video_path, script, category="general"):
     except Exception:
         desc = script.get("description", "Une video courte pleine de faits surprenants !")
 
+    hashtag_words = [h.strip("#") for h in (hashtags + " " + viral_hashtags).split()]
+    all_tags = script.get("tags", []) + [w for w in hashtag_words if w not in script.get("tags", [])][:20]
+
     body = {
         "snippet": {
             "title": script["titre"][:100],
             "description": desc,
-            "tags": script.get("tags", []),
+            "tags": all_tags[:30],
             "categoryId": "22",
         },
         "status": {
