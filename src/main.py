@@ -99,7 +99,10 @@ def main():
     audio_path = gen_audio(script["full_text"])
     video_path = make_video(script, audio_path)
     video_id = upload(video_path, script, script["category"])
-    upload_thumb(video_id, script)
+    try:
+        upload_thumb(video_id, script)
+    except Exception as e:
+        log.warning(f"Miniature ignoree: {e}")
 
     bot_token = os.environ.get("TELEGRAM_BOT_TOKEN")
     chat_id = os.environ.get("TELEGRAM_CHAT_ID")

@@ -19,91 +19,102 @@ CATEGORIES = [
 TEMPLATES = [
     {
         "name": "faits insolites",
-        "prompt": """Tu es un créateur de contenu YouTube Shorts en français.
-Génère un script pour une vidéo courte (20-25 secondes) sur le thème: {category}.
+        "prompt": """Tu es un créateur de contenu YouTube Shorts en français speialise dans le viral.
+Genere un script pour une video courte (35-45 secondes) sur le theme: {category}.
 
-Format de réponse STRICT (réponds UNIQUEMENT ce JSON, rien d'autre):
+Format de reponse STRICT (reponds UNIQUEMENT ce JSON, rien d'autre):
 
 {{
-  "titre": "LE TITRE ACCROCHEUR (max 60 caractères)",
-  "accroche": "Une phrase d'accroche choc pour les 3 premières secondes",
+  "titre": "Titre qui donne envie de cliquer (max 60 car., utiliser 'secret', 'pourquoi', 'cette raison', 'jamais', 'personne ne sait')",
+  "accroche": "Accroche qui stoppe le scroll en 1 seconde - chiffre choquant ou question intrigante",
   "faits": [
-    "Fait intéressant 1 (une phrase courte et percutante)",
-    "Fait intéressant 2",
-    "Fait intéressant 3",
-    "Fait intéressant 4",
-    "Fait intéressant 5"
+    "Fait 1",
+    "Fait 2",
+    "Fait 3",
+    "Fait 4",
+    "Fait 5",
+    "Fait 6",
+    "Fait 7"
   ],
-  "outro": "Une phrase de conclusion marquante",
+  "outro": "Conclusion qui connecte a l'accroche (effet boucle)",
   "tags": ["tag1", "tag2", "tag3", "tag4", "tag5"]
 }}
 
-Règles:
-- Chaque fait doit tenir en UNE phrase courte (< 15 mots)
-- Les faits doivent être surprenants, vérifiables et intéressants
-- Langage simple et direct, accessible à tous
-- Ton dynamique et captivant
-- PUBLIC VISÉ: francophone général (Afrique, Europe)
-- EFFET BOUCLE: L'outro et l'accroche doivent se connecter naturellement (la fin ramène au début)
+Regles:
+- 7 faits, chaque fait tient en UNE phrase (< 15 mots)
+- Faits surprenants, verificables, qui donnent envie de partager
+- L'accroche doit creer un FOSSE DE CURIOSITE des la 1ere seconde
+- LE TITRE doit utiliser un mot puissant: secret, pourquoi, cette raison, jamais, personne, incroyable
+- Langage simple, ton dynamique, accessible a tous
+- Public vise: francophone general (Afrique, Europe)
+- EFFET BOUCLE: l'outro et l'accroche se connectent naturellement (la fin ramene au debut)
 """,
     },
     {
-        "name": "question-réponse",
-        "prompt": """Tu es un créateur de contenu YouTube Shorts en français spécialisé dans les quiz.
-Génère un script pour une vidéo courte (20-25 secondes) sur le thème: {category}, sous format question-réponse.
+        "name": "question-reponse",
+        "prompt": """Tu es un createur de contenu YouTube Shorts en francais specialise dans les quiz viraux.
+Genere un script pour une video courte (35-45 secondes) sur le theme: {category}, format question-reponse.
 
-Format de réponse STRICT (réponds UNIQUEMENT ce JSON):
+Format de reponse STRICT (reponds UNIQUEMENT ce JSON):
 
 {{
-  "titre": "Titre accrocheur avec question (max 60 car.)",
-  "accroche": "Une question qui intrigue pour les 3 premières secondes",
+  "titre": "Question qui intrigue + mot puissant (max 60 car.)",
+  "accroche": "Question choc qui stoppe le scroll en 1 seconde",
   "faits": [
-    "Question 1 ? Réponse : explication courte",
-    "Question 2 ? Réponse : explication courte",
-    "Question 3 ? Réponse : explication courte",
-    "Question 4 ? Réponse : explication courte",
-    "Question 5 ? Réponse : explication courte"
+    "Question 1 ? Reponse : explication courte",
+    "Question 2 ? Reponse : explication courte",
+    "Question 3 ? Reponse : explication courte",
+    "Question 4 ? Reponse : explication courte",
+    "Question 5 ? Reponse : explication courte",
+    "Question 6 ? Reponse : explication courte",
+    "Question 7 ? Reponse : explication courte"
   ],
-  "outro": "Phrase qui donne envie d'en savoir plus",
+  "outro": "Question finale qui donne envie de commenter",
   "tags": ["tag1", "tag2", "tag3", "tag4", "tag5"]
 }}
 
-Règles:
-- Format question + réponse pour chaque fait
-- Questions surprenantes qui donnent envie de répondre
-- Réponses courtes et claires (< 15 mots)
-- PUBLIC VISÉ: francophone général (Afrique, Europe)
-- EFFET BOUCLE: La dernière question ramène à la première
+Regles:
+- 7 questions, format question + reponse pour chaque
+- Questions surprenantes qui donnent envie de repondre en commentaire
+- Reponses courtes et claires (< 15 mots)
+- L'accroche doit etre une question qui cree un fosse de curiosite
+- LE TITRE doit etre une question qui donne envie de cliquer
+- Public vise: francophone general (Afrique, Europe)
+- EFFET BOUCLE: la derniere question ramene a la premiere
 """,
     },
     {
         "name": "liste rapide",
-        "prompt": """Tu es un créateur de contenu YouTube Shorts en français.
-Génère un script pour une vidéo courte (15-20 secondes) sur le thème: {category}.
-Style: liste rapide et dynamique, comme un top 5.
+        "prompt": """Tu es un createur de contenu YouTube Shorts en francais.
+Genere un script pour une video courte (30-40 secondes) sur le theme: {category}.
+Style: classement rapide et dynamique, comme un top 7.
 
-Format de réponse STRICT (réponds UNIQUEMENT ce JSON):
+Format de reponse STRICT (reponds UNIQUEMENT ce JSON):
 
 {{
-  "titre": "TOP 5 [catégorie] (max 50 car.)",
-  "accroche": "Accroche ultra-rapide qui annonce le top",
+  "titre": "Classement surprise avec mot puissant (max 50 car.)",
+  "accroche": "Phrase choc qui annonce le classement et intrigue",
   "faits": [
-    "Numéro 5 : ...",
-    "Numéro 4 : ...",
-    "Numéro 3 : ...",
-    "Numéro 2 : ...",
-    "Numéro 1 : ..."
+    "Numero 7 : ...",
+    "Numero 6 : ...",
+    "Numero 5 : ...",
+    "Numero 4 : ...",
+    "Numero 3 : ...",
+    "Numero 2 : ...",
+    "Numero 1 : ..."
   ],
-  "outro": "Phrase de conclusion percutante",
+  "outro": "Revelation finale percutante qui connecte a l'accroche",
   "tags": ["tag1", "tag2", "tag3", "tag4", "tag5"]
 }}
 
-Règles:
-- Chaque fait doit commencer par son numéro
-- Très rythmé, phrases très courtes (< 10 mots)
-- Le numéro 1 doit être le plus impressionnant
-- PUBLIC VISÉ: francophone général (Afrique, Europe)
-- EFFET BOUCLE: La fin ramène au début
+Regles:
+- 7 elements, chaque fait commence par son numero
+- Tres rythme, phrases tres courtes (< 10 mots)
+- Le numero 1 doit etre le plus impressionnant (garder le meilleur pour la fin)
+- L'accroche doit creer un fosse de curiosite: "Vous ne devinerez jamais le numero 1"
+- LE TITRE doit eviter 'TOP 7' - preferer 'Les X les plus [adjectif]' ou 'Le classement [theme]'
+- Public vise: francophone general (Afrique, Europe)
+- EFFET BOUCLE: la fin ramene au debut
 """,
     },
 ]

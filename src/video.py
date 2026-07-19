@@ -302,6 +302,20 @@ def create_video(script, audio_path, output_path="output.mp4"):
             cta_clip = cta_clip.with_effects([SlideIn(0.5, "bottom")])
             clips.append(cta_clip)
 
+            comment_img = Image.new("RGBA", (700, 80), (0, 0, 0, 0))
+            comment_draw = ImageDraw.Draw(comment_img)
+            comment_font = get_font(30, 600)
+            comment_text = "Et toi ? Dis-nous en commentaire !"
+            comment_bbox = comment_draw.textbbox((0, 0), comment_text, font=comment_font)
+            comment_draw.rounded_rectangle([10, 10, comment_bbox[2] - comment_bbox[0] + 50, comment_bbox[3] - comment_bbox[1] + 30], radius=16, fill=(255, 200, 50, 220))
+            comment_draw.text((35, 15), comment_text, font=comment_font, fill=(0, 0, 0, 255))
+            comment_arr = np.array(comment_img)
+            comment_clip = ImageClip(comment_arr, duration=cta_duration)
+            comment_clip = comment_clip.with_position(("center", 700))
+            comment_clip = comment_clip.with_start(cta_start)
+            comment_clip = comment_clip.with_effects([SlideIn(0.5, "bottom")])
+            clips.append(comment_clip)
+
             link_img = Image.new("RGBA", (400, 50), (0, 0, 0, 0))
             link_draw = ImageDraw.Draw(link_img)
             link_font = get_font(22, 500)
