@@ -281,7 +281,7 @@ def create_video(script, audio_path, output_path="output.mp4"):
         clips.append(wm_clip)
 
         progress_bar = ColorClip(size=(1, 6), color=(255, 200, 50), duration=duration)
-        progress_bar = progress_bar.with_effects([Resize(lambda t: (int(1080 * t / duration), 6))])
+        progress_bar = progress_bar.with_effects([Resize(lambda t: (max(1, int(1080 * t / duration)), 6))])
         progress_bar = progress_bar.with_position((0, 1914))
         clips.append(progress_bar)
 
