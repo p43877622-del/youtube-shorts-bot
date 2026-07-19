@@ -5,8 +5,8 @@ import tempfile
 import requests
 from PIL import Image, ImageDraw, ImageFont
 import numpy as np
-from moviepy import ImageClip, AudioFileClip, CompositeVideoClip, CompositeAudioClip, ColorClip
-from moviepy.video.fx import Resize, SlideIn
+from moviepy import ImageClip, AudioFileClip, CompositeVideoClip, CompositeAudioClip, ColorClip, AudioClip
+from moviepy.video.fx import Resize, SlideIn, FadeOut
 from moviepy.audio.fx import AudioFadeIn, AudioFadeOut
 
 FONT_CACHE = {}
@@ -46,7 +46,89 @@ MUSIC_URLS = [
     "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
     "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3",
     "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3",
+    "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3",
+    "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3",
+    "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3",
+    "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-9.mp3",
+    "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-10.mp3",
+    "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-11.mp3",
+    "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-12.mp3",
 ]
+
+CATEGORY_MUSIC = {
+    "science": [5, 7, 11],
+    "histoire": [2, 9, 3],
+    "technologie": [0, 7, 10],
+    "santé": [1, 4, 8],
+    "animaux": [1, 4, 6],
+    "espace": [3, 6, 9],
+    "mystere": [6, 8, 11],
+    "records": [5, 10, 0],
+    "alimentation": [1, 4, 7],
+    "general": [0, 1, 2],
+}
+
+CATEGORY_COLORS = {
+    "science": (50, 200, 255),
+    "histoire": (255, 200, 50),
+    "technologie": (100, 200, 255),
+    "santé": (100, 255, 150),
+    "animaux": (100, 255, 100),
+    "espace": (200, 100, 255),
+    "mystere": (180, 60, 60),
+    "records": (255, 150, 50),
+    "alimentation": (255, 200, 100),
+    "general": (255, 200, 50),
+}
+
+def get_category_value(category, mapping, default):
+    for key, val in mapping.items():
+        if key in category.lower():
+            return val
+    return default
+
+def create_title_image(title, size=(1080, 1920)):
+    img = Image.new("RGBA", size, (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    font = get_font(56, 800)
+    words = title.split()
+    lines = []
+    current = ""
+    for w in words:
+        test = current + " " + w if current else w
+        bbox = draw.textbbox((0, 0), test, font=font)
+        if bbox[2] - bbox[0] > 900:
+            if current:
+                lines.append(current)
+            current = w
+        else:
+            current = test
+    if current:
+        lines.append(current)
+
+    total_h = len(lines) * 76
+    y_start = max(800, (size[1] - total_h) // 2)
+    bw = 1000
+    for i, line in enumerate(lines):
+        bbox = draw.textbbox((0, 0), line, font=font)
+        lw = bbox[2] - bbox[0]
+        x = (size[0] - lw) // 2
+        y = y_start + i * 76
+        padding = 20
+        draw.rounded_rectangle([x - padding, y - padding, x + lw + padding, y + bbox[3] - bbox[1] + padding], radius=16, fill=(0, 0, 0, 200))
+        draw.text((x, y), line, font=font, fill=(255, 255, 255, 255))
+
+    return img
+
+def create_chime(freq=880, duration=0.15, volume=0.12):
+    def make_frame(t):
+        if t >= duration:
+            return 0.0
+        env = max(0, 1 - t / duration)
+        return float(np.sin(2 * np.pi * freq * t) * env * 0.5)
+    chime = AudioClip(make_frame, duration=duration)
+    chime = chime.with_fps(44100)
+    return chime.with_volume_scaled(volume)
 
 def get_font(size, weight=400):
     cache_key = f"montserrat-{size}-{weight}"
@@ -296,6 +378,8 @@ def create_video(script, audio_path, output_path="output.mp4"):
         clips = []
         current_time = 0.0
 
+        cat_color = get_category_value(script.get("category", ""), CATEGORY_COLORS, (255, 200, 50))
+
         for i, text in enumerate(all_texts):
             is_last = i == len(all_texts) - 1
             text_duration = max(2.0, (len(text) / total_chars) * duration)
@@ -309,7 +393,10 @@ def create_video(script, audio_path, output_path="output.mp4"):
             bg_clip = bg_clip.with_start(current_time)
             clips.append(bg_clip)
 
-            color = ACCENT_COLORS[i % len(ACCENT_COLORS)]
+            if i == 0:
+                color = cat_color
+            else:
+                color = ACCENT_COLORS[(i - 1) % len(ACCENT_COLORS)]
             txt_img = create_text_image(
                 text, font_size=42 if len(text) < 50 else 36, accent_color=color
             )
@@ -329,6 +416,15 @@ def create_video(script, audio_path, output_path="output.mp4"):
                 clips.append(counter_clip)
 
             current_time += text_duration
+
+        title_img = create_title_image(script.get("titre", ""))
+        title_arr = np.array(title_img)
+        title_duration = min(2.0, duration * 0.08)
+        title_clip = ImageClip(title_arr, duration=title_duration)
+        title_clip = title_clip.with_position(("center", "center"))
+        title_clip = title_clip.with_start(0)
+        title_clip = title_clip.with_effects([FadeOut(0.5)])
+        clips.append(title_clip)
 
         wm_img = create_watermark()
         wm_arr = np.array(wm_img)
@@ -387,7 +483,9 @@ def create_video(script, audio_path, output_path="output.mp4"):
 
         music_path = os.path.join(tmpdir, "music.mp3")
         music_ok = False
-        music_url = random.choice(MUSIC_URLS)
+        cat = script.get("category", "")
+        music_indices = get_category_value(cat, CATEGORY_MUSIC, [0, 1, 2])
+        music_url = MUSIC_URLS[random.choice(music_indices)]
         try:
             r = requests.get(music_url, timeout=15, headers={"User-Agent": "Mozilla/5.0"})
             if r.status_code == 200:
@@ -397,6 +495,23 @@ def create_video(script, audio_path, output_path="output.mp4"):
         except:
             pass
 
+        chime_times = []
+        chime_pos = 0.0
+        for i, text in enumerate(all_texts):
+            t = max(2.0, (len(text) / total_chars) * duration)
+            chime_pos += t
+            if chime_pos < duration - 2.0 and i < len(all_texts) - 1:
+                chime_times.append(chime_pos)
+
+        audio_layers = [audio]
+        if chime_times:
+            try:
+                chime = create_chime()
+                chimes_clip = CompositeAudioClip([chime.with_start(t) for t in chime_times])
+                audio_layers.append(chimes_clip)
+            except:
+                pass
+
         if music_ok and os.path.getsize(music_path) > 10000:
             try:
                 bg_music = AudioFileClip(music_path).with_effects([
@@ -404,11 +519,11 @@ def create_video(script, audio_path, output_path="output.mp4"):
                 ])
                 bg_music = bg_music.with_volume_scaled(0.08)
                 bg_music = bg_music.with_duration(duration)
-                final_audio = CompositeAudioClip([audio, bg_music])
+                audio_layers.append(bg_music)
             except:
-                final_audio = audio
-        else:
-            final_audio = audio
+                pass
+
+        final_audio = CompositeAudioClip(audio_layers)
 
         video = CompositeVideoClip(clips, size=(1080, 1920))
         video = video.with_audio(final_audio)
