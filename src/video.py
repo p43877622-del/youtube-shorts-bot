@@ -184,9 +184,65 @@ def make_fallback_bg(path):
         draw.ellipse([x - r, y - r, x + r, y + r], fill=c + (80,), outline=None)
     bg.save(path, "JPEG", quality=85)
 
-def download_backgrounds(count, tmpdir):
+def search_wikipedia_images(query, count, tmpdir):
     paths = []
+    try:
+        search = requests.get(
+            "https://fr.wikipedia.org/w/api.php",
+            params={
+                "action": "query", "list": "search",
+                "srsearch": query.replace(" et ", " ").replace("-", " "),
+                "format": "json", "srlimit": min(count + 3, 20),
+            },
+            timeout=10, headers={"User-Agent": "youtube-shorts-bot/1.0"},
+        )
+        if search.status_code != 200:
+            return paths
+        pages = search.json().get("query", {}).get("search", [])
+        titles = [p["title"] for p in pages]
+
+        images = requests.get(
+            "https://fr.wikipedia.org/w/api.php",
+            params={
+                "action": "query", "titles": "|".join(titles[:10]),
+                "prop": "pageimages", "format": "json",
+                "pithumbsize": 1920,
+            },
+            timeout=10, headers={"User-Agent": "youtube-shorts-bot/1.0"},
+        )
+        if images.status_code != 200:
+            return paths
+        img_pages = images.json().get("query", {}).get("pages", {}).values()
+        urls = []
+        for p in img_pages:
+            thumb = p.get("thumbnail")
+            if thumb and thumb.get("source"):
+                urls.append(thumb["source"])
+
+        for i, url in enumerate(urls[:count]):
+            try:
+                r = requests.get(url, timeout=10, headers={"User-Agent": "Mozilla/5.0"})
+                if r.status_code == 200:
+                    path = os.path.join(tmpdir, f"bg_{i}.jpg")
+                    with open(path, "wb") as f:
+                        f.write(r.content)
+                    img = Image.open(path).convert("RGB")
+                    img = img.resize((1080, 1920), Image.LANCZOS)
+                    img.save(path, "JPEG", quality=85)
+                    paths.append(path)
+            except:
+                pass
+    except:
+        pass
+    return paths
+
+def download_backgrounds(count, tmpdir, query=""):
+    paths = []
+    if query:
+        paths = search_wikipedia_images(query, count, tmpdir)
     for i in range(count):
+        if i < len(paths):
+            continue
         path = os.path.join(tmpdir, f"bg_{i}.jpg")
         ok = False
         seed = random.randint(0, 99999)
@@ -235,7 +291,7 @@ def create_video(script, audio_path, output_path="output.mp4"):
         total_chars = max(1, sum(len(t) for t in all_texts))
         total_segments = len(all_texts)
 
-        bg_paths = download_backgrounds(total_segments, tmpdir)
+        bg_paths = download_backgrounds(total_segments, tmpdir, script.get("category", ""))
 
         clips = []
         current_time = 0.0
