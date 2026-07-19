@@ -44,32 +44,44 @@ Règles:
 - EFFET BOUCLE: L'outro et l'accroche doivent se connecter naturellement (la fin ramène au début pour un visionnage en boucle)
 """
 
-def generate_script(api_key=None):
-    if not api_key:
-        api_key = os.environ.get("OPENROUTER_API_KEY")
-        if not api_key:
-            raise ValueError("OPENROUTER_API_KEY non trouvée")
+PROVIDERS = [
+    {
+        "name": "OpenRouter",
+        "base_url": "https://openrouter.ai/api/v1",
+        "api_key_var": "OPENROUTER_API_KEY",
+        "model": "openrouter/free",
+        "headers": {"HTTP-Referer": "https://github.com/p43877622-del/youtube-shorts-bot"},
+    },
+    {
+        "name": "Groq",
+        "base_url": "https://api.groq.com/openai/v1",
+        "api_key_var": "GROQ_API_KEY",
+        "model": "llama3-70b-8192",
+        "headers": {},
+    },
+]
 
+def _call_provider(provider, prompt):
+    api_key = os.environ.get(provider["api_key_var"])
+    if not api_key:
+        return None
     client = OpenAI(
         api_key=api_key,
-        base_url="https://openrouter.ai/api/v1",
-        default_headers={"HTTP-Referer": "https://github.com/p43877622-del/youtube-shorts-bot"},
+        base_url=provider["base_url"],
+        default_headers=provider["headers"] if provider["headers"] else None,
     )
-    category = random.choice(CATEGORIES)
-    prompt = FACT_TEMPLATE.format(category=category)
-
     response = client.chat.completions.create(
-        model="openrouter/free",
+        model=provider["model"],
         messages=[{"role": "user", "content": prompt}],
         max_tokens=1024,
         temperature=0.7,
     )
+    return response.choices[0].message.content.strip()
 
-    text = response.choices[0].message.content.strip()
+def _parse_script(text):
     text = text.replace("```json", "").replace("```", "").strip()
-
     try:
-        script = json.loads(text)
+        return json.loads(text)
     except json.JSONDecodeError:
         lines = text.split("\n")
         result = {"titre": "", "accroche": "", "faits": [], "outro": "", "tags": []}
@@ -97,19 +109,59 @@ def generate_script(api_key=None):
                 tag = line.strip().strip('",')
                 if tag and not tag.startswith("]"):
                     result["tags"].append(tag.replace('"', "").strip())
-        script = result
+        return result
 
-    full_text = script["accroche"] + ". " + " ".join(script["faits"]) + ". " + script["outro"]
+def _is_valid_script(script):
+    if not script.get("titre") or not script.get("accroche"):
+        return False
+    if len(script.get("faits", [])) < 3:
+        return False
+    if not script.get("outro"):
+        return False
+    return True
 
-    return {
-        "titre": script.get("titre", "Incroyable !"),
-        "accroche": script.get("accroche", ""),
-        "faits": script.get("faits", []),
-        "outro": script.get("outro", ""),
-        "full_text": full_text,
-        "tags": script.get("tags", ["shorts", "faits"]),
-        "category": category,
-    }
+def generate_script(api_key=None):
+    category = random.choice(CATEGORIES)
+    prompt = FACT_TEMPLATE.format(category=category)
+
+    providers_to_try = list(PROVIDERS)
+    random.shuffle(providers_to_try)
+
+    if api_key:
+        providers_to_try.insert(0, {
+            "name": "Custom",
+            "base_url": "https://openrouter.ai/api/v1",
+            "api_key_var": None,
+            "model": "openrouter/free",
+            "headers": {"HTTP-Referer": "https://github.com/p43877622-del/youtube-shorts-bot"},
+        })
+
+    last_error = None
+    for provider in providers_to_try:
+        try:
+            key = api_key if provider["api_key_var"] is None else os.environ.get(provider["api_key_var"])
+            if not key:
+                continue
+            text = _call_provider(provider, prompt)
+            if not text:
+                continue
+            script = _parse_script(text)
+            if _is_valid_script(script):
+                full_text = script["accroche"] + ". " + " ".join(script["faits"]) + ". " + script["outro"]
+                return {
+                    "titre": script.get("titre", "Incroyable !"),
+                    "accroche": script.get("accroche", ""),
+                    "faits": script.get("faits", []),
+                    "outro": script.get("outro", ""),
+                    "full_text": full_text,
+                    "tags": script.get("tags", ["shorts", "faits"]),
+                    "category": category,
+                }
+        except Exception as e:
+            last_error = e
+            continue
+
+    raise ValueError(f"Génération échouée: {last_error}")
 
 if __name__ == "__main__":
     s = generate_script()

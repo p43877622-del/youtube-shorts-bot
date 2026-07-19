@@ -2,8 +2,10 @@ import os
 import sys
 import json
 import time
+import logging
 import tempfile
 import traceback
+from datetime import datetime
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -13,61 +15,98 @@ from src.video import create_video
 from src.upload import upload_video, upload_thumbnail
 from src.thumbnail import generate_thumbnail
 
-def main():
-    print("=== GÉNÉRATION DU SHORT ===")
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+    handlers=[
+        logging.FileHandler("bot.log"),
+        logging.StreamHandler(),
+    ],
+)
+log = logging.getLogger(__name__)
 
-    api_key = os.environ.get("OPENROUTER_API_KEY")
-    if not api_key:
-        sys.exit("ERREUR: OPENROUTER_API_KEY non définie")
+def step(name):
+    def decorator(fn):
+        def wrapper(*args, **kwargs):
+            log.info(f"▶ {name}")
+            start = time.time()
+            try:
+                result = fn(*args, **kwargs)
+                elapsed = time.time() - start
+                log.info(f"✓ {name} — {elapsed:.1f}s")
+                return result
+            except Exception as e:
+                elapsed = time.time() - start
+                log.error(f"✗ {name} — {elapsed:.1f}s — {e}")
+                raise
+        return wrapper
+    return decorator
 
-    script = None
+@step("Génération du contenu")
+def gen_content(api_key):
     for attempt in range(3):
         try:
             script = generate_script(api_key=api_key)
-            break
+            log.info(f"  Thème: {script['category']}")
+            log.info(f"  Titre: {script['titre']}")
+            log.info(f"  Faits: {len(script['faits'])}")
+            return script
         except Exception as e:
             if attempt < 2:
-                print(f"Tentative {attempt+1}/3 échouée: {e}. Nouvel essai dans 5s...")
+                log.warning(f"  Tentative {attempt+1}/3: {e}. Nouvel essai dans 5s...")
                 time.sleep(5)
             else:
-                sys.exit(f"Erreur génération contenu après 3 tentatives: {e}")
-    print(f"Thème: {script['category']}")
-    print(f"Titre: {script['titre']}")
-    print(f"Faits: {len(script['faits'])}")
+                raise
 
-    try:
-        audio_path = generate_audio(script["full_text"], "temp_audio.mp3")
-        print(f"Audio OK ({os.path.getsize(audio_path)} bytes)")
-    except Exception as e:
-        sys.exit(f"Erreur génération audio: {e}")
+@step("Génération audio")
+def gen_audio(text):
+    path = generate_audio(text, "temp_audio.mp3")
+    log.info(f"  Taille: {os.path.getsize(path)} bytes")
+    return path
 
-    try:
-        video_path = create_video(script, audio_path, "temp_video.mp4")
-        if not os.path.exists(video_path):
-            sys.exit("Erreur: fichier vidéo non créé")
-        print(f"Vidéo OK ({os.path.getsize(video_path)} bytes)")
-    except Exception as e:
-        sys.exit(f"Erreur création vidéo: {e}")
+@step("Création vidéo")
+def make_video(script, audio_path):
+    path = create_video(script, audio_path, "temp_video.mp4")
+    if not os.path.exists(path):
+        raise FileNotFoundError("Vidéo non créée")
+    log.info(f"  Taille: {os.path.getsize(path)} bytes")
+    return path
 
-    try:
-        video_id = upload_video(video_path, script, script["category"])
-        print(f"✅ Vidéo publiée: https://youtube.com/shorts/{video_id}")
-    except Exception as e:
-        print(f"❌ Erreur upload: {e}")
-        traceback.print_exc()
+@step("Upload vidéo")
+def upload(video_path, script, category):
+    video_id = upload_video(video_path, script, category)
+    log.info(f"  URL: https://youtube.com/shorts/{video_id}")
+    return video_id
+
+@step("Upload miniature")
+def upload_thumb(video_id, script):
+    thumb_path = generate_thumbnail(script, "temp_thumb.jpg")
+    upload_thumbnail(video_id, thumb_path)
+
+def main():
+    log.info("=" * 50)
+    log.info("GÉNÉRATION DU SHORT — DÉMARRAGE")
+    log.info("=" * 50)
+
+    api_key = os.environ.get("OPENROUTER_API_KEY")
+    if not api_key:
+        log.error("OPENROUTER_API_KEY non définie")
         sys.exit(1)
 
-    try:
-        thumb_path = generate_thumbnail(script, "temp_thumb.jpg")
-        upload_thumbnail(video_id, thumb_path)
-    except Exception as e:
-        print(f"⚠️ Miniature non uploadée: {e}")
+    script = gen_content(api_key)
+    audio_path = gen_audio(script["full_text"])
+    video_path = make_video(script, audio_path)
+    video_id = upload(video_path, script, script["category"])
+    upload_thumb(video_id, script)
 
     for f in ["temp_audio.mp3", "temp_video.mp4", "temp_thumb.jpg"]:
         if os.path.exists(f):
             os.remove(f)
 
-    print("=== TERMINÉ ===")
+    log.info("=" * 50)
+    log.info("TERMINÉ AVEC SUCCÈS")
+    log.info("=" * 50)
 
 if __name__ == "__main__":
     main()
