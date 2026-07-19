@@ -4,8 +4,41 @@ import tempfile
 import requests
 from PIL import Image, ImageDraw, ImageFont
 import numpy as np
-from moviepy import ImageClip, AudioFileClip, CompositeVideoClip
+from moviepy import ImageClip, AudioFileClip, CompositeVideoClip, CompositeAudioClip
 from moviepy.video.fx import Resize, CrossFadeIn
+from moviepy.audio.fx import AudioFadeIn, AudioFadeOut
+
+FONT_CACHE = {}
+FONT_URL = "https://github.com/google/fonts/raw/main/ofl/montserrat/Montserrat%5Bwght%5D.ttf"
+
+MUSIC_URLS = [
+    "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3",
+    "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
+    "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3",
+    "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3",
+    "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3",
+]
+
+def get_font(size, weight=400):
+    cache_key = f"montserrat-{size}-{weight}"
+    if cache_key in FONT_CACHE:
+        return FONT_CACHE[cache_key]
+    font_path = os.path.join(tempfile.gettempdir(), f"montserrat-{weight}.ttf")
+    if not os.path.exists(font_path):
+        try:
+            r = requests.get(FONT_URL, timeout=10)
+            if r.status_code == 200:
+                with open(font_path, "wb") as f:
+                    f.write(r.content)
+        except:
+            pass
+    if os.path.exists(font_path):
+        try:
+            FONT_CACHE[cache_key] = ImageFont.truetype(font_path, size)
+            return FONT_CACHE[cache_key]
+        except:
+            pass
+    return ImageFont.load_default()
 
 BG_IMAGES = [
     "https://images.pexels.com/photos/207247/pexels-photo-207247.jpeg?auto=compress&cs=tinysrgb&w=1080",
@@ -22,21 +55,7 @@ def create_text_image(text, size=(1000, 300), font_size=48):
     img = Image.new("RGBA", size, (0, 0, 0, 0))
     draw = ImageDraw.Draw(img)
 
-    try:
-        font = ImageFont.truetype("arial.ttf", font_size)
-    except:
-        try:
-            font = ImageFont.truetype(
-                "C:\\Windows\\Fonts\\arial.ttf", font_size
-            )
-        except:
-            try:
-                font = ImageFont.truetype(
-                    "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
-                    font_size,
-                )
-            except:
-                font = ImageFont.load_default()
+    font = get_font(font_size)
 
     words = text.split()
     lines = []
@@ -68,6 +87,18 @@ def create_text_image(text, size=(1000, 300), font_size=48):
         draw.text((x, y), line, font=font, fill=(255, 255, 255, 255))
         y += font_size + 10
 
+    return img
+
+def create_watermark(size=(1080, 1920)):
+    img = Image.new("RGBA", (300, 50), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    font = get_font(24, 600)
+    text = "Faits Incroyables"
+    bbox = draw.textbbox((0, 0), text, font=font)
+    tw = bbox[2] - bbox[0]
+    th = bbox[3] - bbox[1]
+    draw.rectangle([0, 0, tw + 30, th + 20], fill=(0, 0, 0, 100))
+    draw.text((15, 10), text, font=font, fill=(255, 255, 255, 180))
     return img
 
 def download_background(url, output_path):
@@ -183,8 +214,39 @@ def create_video(script, audio_path, output_path="output.mp4"):
             clips.append(txt_clip)
             current_time += text_duration
 
+        wm_img = create_watermark()
+        wm_arr = np.array(wm_img)
+        wm_clip = ImageClip(wm_arr, duration=duration)
+        wm_clip = wm_clip.with_position(("right", "top"))
+        clips.append(wm_clip)
+
+        music_path = os.path.join(tmpdir, "music.mp3")
+        music_ok = False
+        music_url = random.choice(MUSIC_URLS)
+        try:
+            r = requests.get(music_url, timeout=15, headers={"User-Agent": "Mozilla/5.0"})
+            if r.status_code == 200:
+                with open(music_path, "wb") as f:
+                    f.write(r.content)
+                music_ok = True
+        except:
+            pass
+
+        if music_ok and os.path.getsize(music_path) > 10000:
+            try:
+                bg_music = AudioFileClip(music_path).with_effects([
+                    AudioFadeIn(1.0), AudioFadeOut(2.0)
+                ])
+                bg_music = bg_music.with_volume_scaled(0.08)
+                bg_music = bg_music.with_duration(duration)
+                final_audio = CompositeAudioClip([audio, bg_music])
+            except:
+                final_audio = audio
+        else:
+            final_audio = audio
+
         video = CompositeVideoClip(clips, size=(1080, 1920))
-        video = video.with_audio(audio)
+        video = video.with_audio(final_audio)
         video = video.with_duration(duration)
 
         video.write_videofile(

@@ -1,5 +1,6 @@
 import os
 import pickle
+import random
 from google.auth.transport.requests import Request
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
@@ -10,11 +11,31 @@ TOKEN_FILE = "token.pickle"
 CLIENT_SECRETS_FILE = "client_secret.json"
 
 AFFILIATE_LINKS = {
-    "science": "https://amzn.to/4bookSciences",
-    "histoire": "https://amzn.to/4bookHistoire",
-    "space": "https://amzn.to/4bookEspace",
-    "animaux": "https://amzn.to/4bookAnimaux",
-    "general": "https://amzn.to/4cultureGen",
+    "science": [
+        "https://amzn.to/4bookSciences",
+        "https://amzn.to/4science2",
+        "https://amzn.to/4science3",
+    ],
+    "histoire": [
+        "https://amzn.to/4bookHistoire",
+        "https://amzn.to/4histoire2",
+        "https://amzn.to/4histoire3",
+    ],
+    "space": [
+        "https://amzn.to/4bookEspace",
+        "https://amzn.to/4space2",
+        "https://amzn.to/4space3",
+    ],
+    "animaux": [
+        "https://amzn.to/4bookAnimaux",
+        "https://amzn.to/4animaux2",
+        "https://amzn.to/4animaux3",
+    ],
+    "general": [
+        "https://amzn.to/4cultureGen",
+        "https://amzn.to/4general2",
+        "https://amzn.to/4general3",
+    ],
 }
 
 DESCRIPTION_TEMPLATE = """{description}
@@ -65,7 +86,7 @@ def upload_video(video_path, script, category="general"):
     if affiliate_key not in AFFILIATE_LINKS:
         affiliate_key = "general"
 
-    affiliate_url = AFFILIATE_LINKS[affiliate_key]
+    affiliate_url = random.choice(AFFILIATE_LINKS[affiliate_key])
     affiliate_text = {
         "science": "Les meilleurs livres scientifiques",
         "histoire": "Les livres d'histoire recommandés",
@@ -110,6 +131,14 @@ def upload_video(video_path, script, category="general"):
 
     print(f"Vidéo uploadée: https://youtube.com/shorts/{response['id']}")
     return response["id"]
+
+def upload_thumbnail(video_id, thumbnail_path):
+    youtube = get_authenticated_service()
+    media = MediaFileUpload(thumbnail_path, chunksize=-1, resumable=True)
+    request = youtube.thumbnails().set(videoId=video_id, media_body=media)
+    response = request.execute()
+    print(f"Miniature uploadée: {response}")
+    return response
 
 if __name__ == "__main__":
     print("Test upload...")

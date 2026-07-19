@@ -10,7 +10,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from src.content import generate_script
 from src.audio import generate_audio
 from src.video import create_video
-from src.upload import upload_video
+from src.upload import upload_video, upload_thumbnail
 from src.thumbnail import generate_thumbnail
 
 def main():
@@ -57,7 +57,13 @@ def main():
         traceback.print_exc()
         sys.exit(1)
 
-    for f in ["temp_audio.mp3", "temp_video.mp4"]:
+    try:
+        thumb_path = generate_thumbnail(script, "temp_thumb.jpg")
+        upload_thumbnail(video_id, thumb_path)
+    except Exception as e:
+        print(f"⚠️ Miniature non uploadée: {e}")
+
+    for f in ["temp_audio.mp3", "temp_video.mp4", "temp_thumb.jpg"]:
         if os.path.exists(f):
             os.remove(f)
 
