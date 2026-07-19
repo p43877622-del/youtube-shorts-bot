@@ -1,6 +1,7 @@
 import os
 import math
 import random
+import logging
 import tempfile
 import requests
 from PIL import Image, ImageDraw, ImageFont
@@ -8,6 +9,8 @@ import numpy as np
 from moviepy import ImageClip, AudioFileClip, CompositeVideoClip, CompositeAudioClip, ColorClip, AudioClip
 from moviepy.video.fx import Resize, SlideIn, FadeOut
 from moviepy.audio.fx import AudioFadeIn, AudioFadeOut
+
+log = logging.getLogger(__name__)
 
 FONT_CACHE = {}
 FONT_URL = "https://github.com/google/fonts/raw/main/ofl/montserrat/Montserrat%5Bwght%5D.ttf"
@@ -266,65 +269,9 @@ def make_fallback_bg(path):
         draw.ellipse([x - r, y - r, x + r, y + r], fill=c + (80,), outline=None)
     bg.save(path, "JPEG", quality=85)
 
-def search_wikipedia_images(query, count, tmpdir):
+def download_backgrounds(count, tmpdir):
     paths = []
-    try:
-        search = requests.get(
-            "https://fr.wikipedia.org/w/api.php",
-            params={
-                "action": "query", "list": "search",
-                "srsearch": query.replace(" et ", " ").replace("-", " "),
-                "format": "json", "srlimit": min(count + 3, 20),
-            },
-            timeout=10, headers={"User-Agent": "youtube-shorts-bot/1.0"},
-        )
-        if search.status_code != 200:
-            return paths
-        pages = search.json().get("query", {}).get("search", [])
-        titles = [p["title"] for p in pages]
-
-        images = requests.get(
-            "https://fr.wikipedia.org/w/api.php",
-            params={
-                "action": "query", "titles": "|".join(titles[:10]),
-                "prop": "pageimages", "format": "json",
-                "pithumbsize": 1920,
-            },
-            timeout=10, headers={"User-Agent": "youtube-shorts-bot/1.0"},
-        )
-        if images.status_code != 200:
-            return paths
-        img_pages = images.json().get("query", {}).get("pages", {}).values()
-        urls = []
-        for p in img_pages:
-            thumb = p.get("thumbnail")
-            if thumb and thumb.get("source"):
-                urls.append(thumb["source"])
-
-        for i, url in enumerate(urls[:count]):
-            try:
-                r = requests.get(url, timeout=10, headers={"User-Agent": "Mozilla/5.0"})
-                if r.status_code == 200:
-                    path = os.path.join(tmpdir, f"bg_{i}.jpg")
-                    with open(path, "wb") as f:
-                        f.write(r.content)
-                    img = Image.open(path).convert("RGB")
-                    img = img.resize((1080, 1920), Image.LANCZOS)
-                    img.save(path, "JPEG", quality=85)
-                    paths.append(path)
-            except:
-                pass
-    except:
-        pass
-    return paths
-
-def download_backgrounds(count, tmpdir, query=""):
-    paths = []
-    if query:
-        paths = search_wikipedia_images(query, count, tmpdir)
     for i in range(count):
-        if i < len(paths):
-            continue
         path = os.path.join(tmpdir, f"bg_{i}.jpg")
         ok = False
         seed = random.randint(0, 99999)
@@ -339,15 +286,18 @@ def download_backgrounds(count, tmpdir, query=""):
                     f.write(r.content)
                 Image.open(path).convert("RGB").resize((1080, 1920), Image.LANCZOS).save(path, "JPEG", quality=85)
                 ok = True
+                log.info(f"  Fond {i+1}/{count}: picsum (seed={seed})")
         except:
             pass
         if not ok:
             for url in BG_IMAGES:
                 if download_background(url, path):
                     ok = True
+                    log.info(f"  Fond {i+1}/{count}: pexels")
                     break
         if not ok:
             make_fallback_bg(path)
+            log.info(f"  Fond {i+1}/{count}: fallback")
         paths.append(path)
     return paths
 
@@ -373,7 +323,7 @@ def create_video(script, audio_path, output_path="output.mp4"):
         total_chars = max(1, sum(len(t) for t in all_texts))
         total_segments = len(all_texts)
 
-        bg_paths = download_backgrounds(total_segments, tmpdir, script.get("category", ""))
+        bg_paths = download_backgrounds(total_segments, tmpdir)
 
         clips = []
         current_time = 0.0
@@ -382,7 +332,7 @@ def create_video(script, audio_path, output_path="output.mp4"):
 
         for i, text in enumerate(all_texts):
             is_last = i == len(all_texts) - 1
-            text_duration = max(2.0, (len(text) / total_chars) * duration)
+            text_duration = min(5.0, max(2.0, (len(text) / total_chars) * duration))
             if current_time + text_duration > duration:
                 text_duration = duration - current_time
             if text_duration <= 0.5:

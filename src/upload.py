@@ -1,35 +1,47 @@
 import os
 import pickle
 import random
+import logging
 from google.auth.transport.requests import Request
 from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 
+log = logging.getLogger(__name__)
+
 SCOPES = ["https://www.googleapis.com/auth/youtube.upload"]
 TOKEN_FILE = "token.pickle"
 CLIENT_SECRETS_FILE = "client_secret.json"
 
+# Remplace ces liens par tes liens d'affiliation Chariow après inscription
+# Exemple: "https://affiliate.chariow.com/go/ton-lien"
 AFFILIATE_LINKS = {
     "science": [
-        "https://amzn.to/4bookSciences",
-        "https://amzn.to/4science2",
-        "https://amzn.to/4science3",
+        "https://amzn.to/4bu2u4g",
     ],
     "histoire": [
-        "https://amzn.to/4bookHistoire",
-        "https://amzn.to/4histoire2",
-        "https://amzn.to/4histoire3",
+        "https://amzn.to/4bu2u4g",
     ],
-    "space": [
-        "https://amzn.to/4bookEspace",
-        "https://amzn.to/4space2",
-        "https://amzn.to/4space3",
+    "technologie": [
+        "https://amzn.to/4bu2u4g",
+    ],
+    "santé": [
+        "https://amzn.to/4bu2u4g",
     ],
     "animaux": [
-        "https://amzn.to/4bookAnimaux",
-        "https://amzn.to/4animaux2",
-        "https://amzn.to/4animaux3",
+        "https://amzn.to/4bu2u4g",
+    ],
+    "espace": [
+        "https://amzn.to/4bu2u4g",
+    ],
+    "mystere": [
+        "https://amzn.to/4bu2u4g",
+    ],
+    "records": [
+        "https://amzn.to/4bu2u4g",
+    ],
+    "alimentation": [
+        "https://amzn.to/4bu2u4g",
     ],
     "general": [
         "https://amzn.to/4bu2u4g",
@@ -37,17 +49,79 @@ AFFILIATE_LINKS = {
     ],
 }
 
-DESCRIPTION_TEMPLATE = """{description}
+AFFILIATE_TEXT = {
+    "science": "Decouvre les meilleurs ebooks scientifiques",
+    "histoire": "Plonge dans l'histoire avec ces ebooks",
+    "technologie": "Ebooks tech et innovation",
+    "santé": "Prends soin de toi avec ces lectures",
+    "animaux": "Explore la faune avec ces ebooks",
+    "espace": "Voyage dans l'univers avec ces ebooks",
+    "mystere": "Perce les mysteres avec ces lectures",
+    "records": "Les records les plus fous en ebook",
+    "alimentation": "Mange mieux avec ces ebooks nutrition",
+    "general": "Notre selection d'ebooks culture générale",
+}
 
-{affiliate_text} : {affiliate_url}
+DESCRIPTION_TEMPLATE_YOUTUBE = """{affiliate_text} : {affiliate_url}
+
+{description}
 
 Abonne-toi pour plus de contenus !
 
-{hashtags} {viral_hashtags}
-{tags}
+{hashtags}
+"""
+
+DESCRIPTION_TEMPLATE_FACEBOOK = """{description}
+
+Abonne-toi pour plus de contenus !
+
+{hashtags}
 """
 
 MAX_DESC_BYTES = 4900
+
+def get_affiliate_link(category):
+    affiliate_key = category.split()[0] if category else "general"
+    affiliate_key = affiliate_key.lower()
+    if affiliate_key not in AFFILIATE_LINKS:
+        affiliate_key = "general"
+    url = random.choice(AFFILIATE_LINKS[affiliate_key])
+    text = AFFILIATE_TEXT.get(affiliate_key, "Decouvre notre selection")
+    return text, url
+
+def build_youtube_description(script, category):
+    affiliate_text, affiliate_url = get_affiliate_link(category)
+    hashtags = script.get("hashtags", "#culturegenerale #shorts")
+    viral_hashtags = script.get("viral_hashtags", "#pourtoi #viral #shorts")
+    all_hashtags = f"{hashtags} {viral_hashtags}"
+
+    try:
+        desc = DESCRIPTION_TEMPLATE_YOUTUBE.format(
+            description=script.get("description", "Une video courte pleine de faits surprenants !"),
+            affiliate_text=affiliate_text,
+            affiliate_url=affiliate_url,
+            hashtags=all_hashtags,
+        ).strip()
+        desc_bytes = desc.encode("utf-8")
+        if len(desc_bytes) > MAX_DESC_BYTES:
+            desc = desc_bytes[:MAX_DESC_BYTES].decode("utf-8", errors="ignore")
+    except Exception:
+        desc = script.get("description", "Une video courte pleine de faits surprenants !")
+    return desc, affiliate_text, affiliate_url
+
+def build_facebook_description(script, category):
+    hashtags = script.get("hashtags", "#culturegenerale #shorts")
+    viral_hashtags = script.get("viral_hashtags", "#pourtoi #viral #shorts")
+    all_hashtags = f"{hashtags} {viral_hashtags}"
+
+    try:
+        desc = DESCRIPTION_TEMPLATE_FACEBOOK.format(
+            description=script.get("description", "Une video courte pleine de faits surprenants !"),
+            hashtags=all_hashtags,
+        ).strip()
+    except Exception:
+        desc = script.get("description", "Une video courte pleine de faits surprenants !")
+    return desc
 
 def get_authenticated_service():
     credentials = None
@@ -80,39 +154,10 @@ def get_authenticated_service():
 def upload_video(video_path, script, category="general"):
     youtube = get_authenticated_service()
 
-    affiliate_key = category.split()[0] if category else "general"
-    affiliate_key = affiliate_key.lower()
-    if affiliate_key not in AFFILIATE_LINKS:
-        affiliate_key = "general"
+    desc, affiliate_text, affiliate_url = build_youtube_description(script, category)
 
-    affiliate_url = random.choice(AFFILIATE_LINKS[affiliate_key])
-    affiliate_text = {
-        "science": "Les meilleurs livres scientifiques",
-        "histoire": "Les livres d'histoire recommandés",
-        "space": "Livres sur l'espace et l'astronomie",
-        "animaux": "Découvre la faune extraordinaire",
-        "general": "Notre sélection culture générale",
-    }.get(affiliate_key, "Découvre notre sélection")
-
-    tags_str = " ".join(f"#{t}" for t in script["tags"]) if script.get("tags") else ""
     hashtags = script.get("hashtags", "#culturegenerale #shorts")
     viral_hashtags = script.get("viral_hashtags", "#pourtoi #viral #shorts")
-
-    try:
-        desc = DESCRIPTION_TEMPLATE.format(
-            description=script.get("description", "Une video courte pleine de faits surprenants !"),
-            affiliate_text=affiliate_text,
-            affiliate_url=affiliate_url,
-            hashtags=hashtags,
-            viral_hashtags=viral_hashtags,
-            tags=tags_str,
-        ).strip()
-        desc_bytes = desc.encode("utf-8")
-        if len(desc_bytes) > MAX_DESC_BYTES:
-            desc = desc_bytes[:MAX_DESC_BYTES].decode("utf-8", errors="ignore")
-    except Exception:
-        desc = script.get("description", "Une video courte pleine de faits surprenants !")
-
     hashtag_words = [h.strip("#") for h in (hashtags + " " + viral_hashtags).split()]
     all_tags = script.get("tags", []) + [w for w in hashtag_words if w not in script.get("tags", [])][:20]
 
@@ -148,7 +193,7 @@ def upload_video(video_path, script, category="general"):
         add_to_playlist(response["id"], category)
     except Exception as e:
         print(f"⚠️ Ajout playlist: {e}")
-    return response["id"]
+    return response["id"], affiliate_text, affiliate_url
 
 def upload_thumbnail(video_id, thumbnail_path):
     youtube = get_authenticated_service()

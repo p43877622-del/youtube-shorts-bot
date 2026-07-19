@@ -13,7 +13,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from src.content import generate_script
 from src.audio import generate_audio
 from src.video import create_video
-from src.upload import upload_video, upload_thumbnail
+from src.upload import upload_video, upload_thumbnail, build_facebook_description, get_affiliate_link
+from src.upload_facebook import upload_video_to_facebook, post_comment_affiliate_link
 from src.thumbnail import generate_thumbnail
 
 logging.basicConfig(
@@ -74,16 +75,33 @@ def make_video(script, audio_path):
     log.info(f"  Taille: {os.path.getsize(path)} bytes")
     return path
 
-@step("Upload vidéo")
-def upload(video_path, script, category):
-    video_id = upload_video(video_path, script, category)
+@step("Upload YouTube")
+def upload_yt(video_path, script, category):
+    video_id, affiliate_text, affiliate_url = upload_video(video_path, script, category)
     log.info(f"  URL: https://youtube.com/shorts/{video_id}")
-    return video_id
+    return video_id, affiliate_text, affiliate_url
 
 @step("Upload miniature")
 def upload_thumb(video_id, script):
     thumb_path = generate_thumbnail(script, "temp_thumb.jpg")
     upload_thumbnail(video_id, thumb_path)
+
+@step("Upload Facebook Reels")
+def upload_fb(video_path, script, category):
+    fb_page_id = os.environ.get("FB_PAGE_ID")
+    if not fb_page_id:
+        log.info("  FB non configuré, ignoré")
+        return None
+
+    fb_desc = build_facebook_description(script, category)
+    video_id = upload_video_to_facebook(video_path, fb_desc)
+    if not video_id:
+        return None
+
+    _, affiliate_url = get_affiliate_link(category)
+    comment_msg = f"📚 {affiliate_url} — Notre sélection du jour !"
+    post_comment_affiliate_link(video_id, comment_msg)
+    return video_id
 
 def main():
     log.info("=" * 50)
@@ -95,14 +113,21 @@ def main():
         log.error("OPENROUTER_API_KEY non définie")
         sys.exit(1)
 
+    # Décalage aléatoire 0-60min pour éviter comportement robot
+    delay = random.randint(0, 3600)
+    log.info(f"  Décalage aléatoire: {delay}s")
+    time.sleep(delay)
+
     script = gen_content(api_key)
     audio_path = gen_audio(script["full_text"])
     video_path = make_video(script, audio_path)
-    video_id = upload(video_path, script, script["category"])
+    video_id, affiliate_text, affiliate_url = upload_yt(video_path, script, script["category"])
     try:
         upload_thumb(video_id, script)
     except Exception as e:
-        log.warning(f"Miniature ignoree: {e}")
+        log.warning(f"Miniature ignorée: {e}")
+
+    upload_fb(video_path, script, script["category"])
 
     bot_token = os.environ.get("TELEGRAM_BOT_TOKEN")
     chat_id = os.environ.get("TELEGRAM_CHAT_ID")
@@ -123,4 +148,6 @@ def main():
     log.info("=" * 50)
 
 if __name__ == "__main__":
+    # Ajout du random ici aussi pour le décalage
+    import random
     main()

@@ -19,120 +19,79 @@ CATEGORIES = [
 TEMPLATES = [
     {
         "name": "faits insolites",
-        "prompt": """Tu es un créateur de contenu YouTube Shorts en français speialise dans le viral.
-Genere un script pour une video courte (35-45 secondes) sur le theme: {category}.
+        "prompt": """Tu es un createur de contenu viral. Genere un script Short (10-15s) sur: {category}.
 
-Format de reponse STRICT (reponds UNIQUEMENT ce JSON, rien d'autre):
-
+Format JSON UNIQUEMENT:
 {{
-  "titre": "Titre qui donne envie de cliquer (max 60 car., utiliser 'secret', 'pourquoi', 'cette raison', 'jamais', 'personne ne sait')",
-  "accroche": "Accroche qui stoppe le scroll en 1 seconde - chiffre choquant ou question intrigante",
-  "faits": [
-    "Fait 1",
-    "Fait 2",
-    "Fait 3",
-    "Fait 4",
-    "Fait 5",
-    "Fait 6",
-    "Fait 7"
-  ],
-  "outro": "Conclusion qui connecte a l'accroche (effet boucle)",
-  "tags": ["tag1", "tag2", "tag3", "tag4", "tag5"]
+  "titre": "Titre court avec mot puissant (secret/pourquoi/jamais) max 50 car.",
+  "accroche": "UN CHIFFRE CHOC qui stoppe le scroll (ex: '99% ignorent que...')",
+  "faits": ["Fait 1 percutant", "Fait 2 surprenant", "Fait 3 bluffant"],
+  "outro": "Phrase boucle qui connecte a l'accroche",
+  "tags": ["tag1", "tag2", "tag3"]
 }}
 
 Regles:
-- 7 faits, chaque fait tient en UNE phrase (< 15 mots)
-- Faits surprenants, verificables, qui donnent envie de partager
-- L'accroche doit creer un FOSSE DE CURIOSITE des la 1ere seconde
-- LE TITRE doit utiliser un mot puissant: secret, pourquoi, cette raison, jamais, personne, incroyable
-- Langage simple, ton dynamique, accessible a tous
-- Public vise: francophone general (Afrique, Europe)
-- EFFET BOUCLE: l'outro et l'accroche se connectent naturellement (la fin ramene au debut)
+- 3 faits seulement, chaque fait < 10 mots
+- Accroche = FOSSE DE CURIOSITE en 1 seconde avec chiffre
+- Langage simple, ton dynamique, public Afrique/Europe
+- EFFET BOUCLE: l'outro ramene au debut
 """,
     },
     {
         "name": "question-reponse",
-        "prompt": """Tu es un createur de contenu YouTube Shorts en francais specialise dans les quiz viraux.
-Genere un script pour une video courte (35-45 secondes) sur le theme: {category}, format question-reponse.
+        "prompt": """Tu es un createur de quiz viral. Genere un script Short (10-15s) sur: {category}, format question-reponse.
 
-Format de reponse STRICT (reponds UNIQUEMENT ce JSON):
-
+Format JSON UNIQUEMENT:
 {{
-  "titre": "Question qui intrigue + mot puissant (max 60 car.)",
-  "accroche": "Question choc qui stoppe le scroll en 1 seconde",
-  "faits": [
-    "Question 1 ? Reponse : explication courte",
-    "Question 2 ? Reponse : explication courte",
-    "Question 3 ? Reponse : explication courte",
-    "Question 4 ? Reponse : explication courte",
-    "Question 5 ? Reponse : explication courte",
-    "Question 6 ? Reponse : explication courte",
-    "Question 7 ? Reponse : explication courte"
-  ],
-  "outro": "Question finale qui donne envie de commenter",
-  "tags": ["tag1", "tag2", "tag3", "tag4", "tag5"]
+  "titre": "Question intrigue max 50 car.",
+  "accroche": "Question choc qui stoppe le scroll",
+  "faits": ["Question 1 ? Reponse courte", "Question 2 ? Reponse courte", "Question 3 ? Reponse courte"],
+  "outro": "Question finale pour commenter",
+  "tags": ["tag1", "tag2", "tag3"]
 }}
 
 Regles:
-- 7 questions, format question + reponse pour chaque
-- Questions surprenantes qui donnent envie de repondre en commentaire
-- Reponses courtes et claires (< 15 mots)
-- L'accroche doit etre une question qui cree un fosse de curiosite
-- LE TITRE doit etre une question qui donne envie de cliquer
-- Public vise: francophone general (Afrique, Europe)
-- EFFET BOUCLE: la derniere question ramene a la premiere
+- 3 questions, format question + reponse
+- Questions qui donnent envie de commenter
+- Reponses < 10 mots
+- Public Afrique/Europe
 """,
     },
     {
         "name": "liste rapide",
-        "prompt": """Tu es un createur de contenu YouTube Shorts en francais.
-Genere un script pour une video courte (30-40 secondes) sur le theme: {category}.
-Style: classement rapide et dynamique, comme un top 7.
+        "prompt": """Tu es un createur de contenu viral. Genere un script Short (10-15s) sur: {category}. Style: classement rapide Top 3.
 
-Format de reponse STRICT (reponds UNIQUEMENT ce JSON):
-
+Format JSON UNIQUEMENT:
 {{
-  "titre": "Classement surprise avec mot puissant (max 50 car.)",
-  "accroche": "Phrase choc qui annonce le classement et intrigue",
-  "faits": [
-    "Numero 7 : ...",
-    "Numero 6 : ...",
-    "Numero 5 : ...",
-    "Numero 4 : ...",
-    "Numero 3 : ...",
-    "Numero 2 : ...",
-    "Numero 1 : ..."
-  ],
-  "outro": "Revelation finale percutante qui connecte a l'accroche",
-  "tags": ["tag1", "tag2", "tag3", "tag4", "tag5"]
+  "titre": "Titre classement max 50 car.",
+  "accroche": "Annonce choc du classement qui intrigue",
+  "faits": ["Numero 3 : ...", "Numero 2 : ...", "Numero 1 : ..."],
+  "outro": "Revelation finale percutante",
+  "tags": ["tag1", "tag2", "tag3"]
 }}
 
 Regles:
-- 7 elements, chaque fait commence par son numero
-- Tres rythme, phrases tres courtes (< 10 mots)
-- Le numero 1 doit etre le plus impressionnant (garder le meilleur pour la fin)
-- L'accroche doit creer un fosse de curiosite: "Vous ne devinerez jamais le numero 1"
-- LE TITRE doit eviter 'TOP 7' - preferer 'Les X les plus [adjectif]' ou 'Le classement [theme]'
-- Public vise: francophone general (Afrique, Europe)
-- EFFET BOUCLE: la fin ramene au debut
+- 3 elements, phrases < 10 mots
+- Numero 1 = le plus impressionnant
+- Public Afrique/Europe
 """,
     },
 ]
 
 CATEGORY_HASHTAGS = {
-    "science": "#science #decouverte #savoirs #apprendre #curiosite #biologie #physique #chimie",
-    "histoire": "#histoire #passe #culture #patrimoine #civilisation #archeologie #lecon #histoireDeFrance",
-    "technologie": "#tech #innovation #futur #numerique #hightech #IA #intelligenceArtificielle #gadget",
-    "santé": "#sante #bienetre #corps #medecine #vitalite #fitness #nutrition #santeNaturelle",
-    "animaux": "#animaux #nature #faune #especes #sauvage #animauxDrole #curiositeAnimal #biodiversite",
-    "espace": "#espace #astronomie #univers #planetes #etoiles #NASA #astrophysique #cosmos",
-    "mystere": "#mystere #inexplique #phenomene #enigme #secrets #paranormal #mysteresDuMonde #etrange",
-    "records": "#records #exploits #guiness #mondial #challenge #incroyable #performances #recordDuMonde",
-    "alimentation": "#nutrition #alimentation #sante #cuisine #bienmanger #recette #gastronomie #food",
-    "general": "#culturegenerale #savoir #apprendre #curiosite #intelligence #connaissance #shorts #education",
+    "science": "#science #curiosite",
+    "histoire": "#histoire #culture",
+    "technologie": "#tech #innovation",
+    "santé": "#sante #bienetre",
+    "animaux": "#animaux #nature",
+    "espace": "#espace #astronomie",
+    "mystere": "#mystere #enigme",
+    "records": "#records #exploit",
+    "alimentation": "#alimentation #nutrition",
+    "general": "#culturegenerale #savoir",
 }
 
-VIRAL_HASHTAGS = "#pourtoi #fyp #viral #tendance #shorts #shortsYouTube #decouvrir"
+VIRAL_HASHTAGS = "#pourtoi #viral #shorts"
 
 USED_FILE = ".used_categories.json"
 
@@ -173,7 +132,7 @@ PROVIDERS = [
         "name": "Groq",
         "base_url": "https://api.groq.com/openai/v1",
         "api_key_var": "GROQ_API_KEY",
-        "model": "llama3-70b-8192",
+        "model": "llama-3.3-70b-versatile",
         "headers": {},
     },
 ]
@@ -190,7 +149,7 @@ def _call_provider(provider, prompt):
     response = client.chat.completions.create(
         model=provider["model"],
         messages=[{"role": "user", "content": prompt}],
-        max_tokens=1024,
+        max_tokens=512,
         temperature=0.7,
     )
     return response.choices[0].message.content.strip()
