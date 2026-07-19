@@ -40,22 +40,21 @@ AFFILIATE_LINKS = {
 
 DESCRIPTION_TEMPLATE = """{description}
 
-⏱ TIMELINE :
+TIMELINE :
 {timeline}
 
-📚 RECOMMANDATIONS :
-📖 {affiliate_text} → {affiliate_url}
-📖 Découvre notre sélection de livres : {affiliate_url}
+RECOMMANDATIONS :
+{affiliate_text} -> {affiliate_url}
 
-💬 Quelle est ton {question} ? Dis-le en commentaire ! 👇
+Quelle est ton {question} ? Dis-le en commentaire !
 
-🎬 Abonne-toi pour ne rien rater ! 🔔
+Abonne-toi pour ne rien rater !
 
 {hashtags}
-
-#shorts #culturegenerale #apprendre #curiosite
 {tags}
 """
+
+MAX_DESC_BYTES = 4900
 
 def get_authenticated_service():
     credentials = None
@@ -112,18 +111,26 @@ def upload_video(video_path, script, category="general"):
     question_words = {"science": "fait préféré", "histoire": "époque préférée", "general": "découverte", "space": "planète préférée", "animaux": "animal préféré"}
     question = question_words.get(affiliate_key, "découverte")
 
+    try:
+        desc = DESCRIPTION_TEMPLATE.format(
+            description=script.get("description", "Une video courte pleine de faits surprenants !"),
+            affiliate_text=affiliate_text,
+            affiliate_url=affiliate_url,
+            timeline=timeline,
+            question=question,
+            hashtags=hashtags,
+            tags=tags_str,
+        ).strip()
+        desc_bytes = desc.encode("utf-8")
+        if len(desc_bytes) > MAX_DESC_BYTES:
+            desc = desc_bytes[:MAX_DESC_BYTES].decode("utf-8", errors="ignore")
+    except Exception:
+        desc = script.get("description", "Une video courte pleine de faits surprenants !")
+
     body = {
         "snippet": {
             "title": script["titre"][:100],
-            "description": DESCRIPTION_TEMPLATE.format(
-                description=script.get("description", "Une vidéo courte pleine de faits surprenants !"),
-                affiliate_text=affiliate_text,
-                affiliate_url=affiliate_url,
-                timeline=timeline,
-                question=question,
-                hashtags=hashtags,
-                tags=tags_str,
-            ).strip(),
+            "description": desc,
             "tags": script.get("tags", []),
             "categoryId": "22",
         },
