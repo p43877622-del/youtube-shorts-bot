@@ -32,9 +32,7 @@ AFFILIATE_LINKS = {
         "https://amzn.to/4animaux3",
     ],
     "general": [
-        "https://amzn.to/4cultureGen",
-        "https://amzn.to/4general2",
-        "https://amzn.to/4general3",
+        "https://amzn.to/4bu2u4g",
     ],
 }
 
