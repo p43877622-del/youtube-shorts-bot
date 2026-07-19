@@ -5,7 +5,7 @@ import tempfile
 import requests
 from PIL import Image, ImageDraw, ImageFont
 import numpy as np
-from moviepy import ImageClip, AudioFileClip, CompositeVideoClip, CompositeAudioClip
+from moviepy import ImageClip, AudioFileClip, CompositeVideoClip, CompositeAudioClip, ColorClip
 from moviepy.video.fx import Resize, SlideIn
 from moviepy.audio.fx import AudioFadeIn, AudioFadeOut
 
@@ -279,6 +279,28 @@ def create_video(script, audio_path, output_path="output.mp4"):
         wm_clip = ImageClip(wm_arr, duration=duration)
         wm_clip = wm_clip.with_position(("right", "top"))
         clips.append(wm_clip)
+
+        progress_bar = ColorClip(size=(1, 6), color=(255, 200, 50), duration=duration)
+        progress_bar = progress_bar.with_effects([Resize(lambda t: (int(1080 * t / duration), 6))])
+        progress_bar = progress_bar.with_position((0, 1914))
+        clips.append(progress_bar)
+
+        cta_duration = min(3.0, duration * 0.15)
+        cta_start = duration - cta_duration
+        if cta_start > 0:
+            cta_img = Image.new("RGBA", (600, 100), (0, 0, 0, 0))
+            cta_draw = ImageDraw.Draw(cta_img)
+            cta_font = get_font(40, 700)
+            cta_text = "Abonne-toi 🔔"
+            cta_bbox = cta_draw.textbbox((0, 0), cta_text, font=cta_font)
+            cta_draw.rounded_rectangle([10, 10, cta_bbox[2] - cta_bbox[0] + 50, cta_bbox[3] - cta_bbox[1] + 30], radius=20, fill=(255, 200, 50, 220))
+            cta_draw.text((35, 20), cta_text, font=cta_font, fill=(0, 0, 0, 255))
+            cta_arr = np.array(cta_img)
+            cta_clip = ImageClip(cta_arr, duration=cta_duration)
+            cta_clip = cta_clip.with_position(("center", 900))
+            cta_clip = cta_clip.with_start(cta_start)
+            cta_clip = cta_clip.with_effects([SlideIn(0.5, "bottom")])
+            clips.append(cta_clip)
 
         music_path = os.path.join(tmpdir, "music.mp3")
         music_ok = False
