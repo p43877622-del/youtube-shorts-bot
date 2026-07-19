@@ -41,6 +41,7 @@ Règles:
 - Langage simple et direct, accessible à tous
 - Ton dynamique et captivant
 - PUBLIC VISÉ: francophone général (Afrique, Europe)
+- EFFET BOUCLE: L'outro et l'accroche doivent se connecter naturellement (la fin ramène au début pour un visionnage en boucle)
 """
 
 def generate_script(api_key=None):
